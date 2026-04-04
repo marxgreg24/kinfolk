@@ -16,14 +16,14 @@ interface InputProps {
 }
 
 const EyeIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
     <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
     <circle cx="12" cy="12" r="3" />
   </svg>
 )
 
 const EyeOffIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
     <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
     <line x1="1" y1="1" x2="23" y2="23" />
   </svg>
@@ -51,12 +51,9 @@ const Input = ({
   return (
     <div className={`flex flex-col ${className}`}>
       {label && (
-        <label
-          htmlFor={inputId}
-          className="text-sm font-medium text-gray-700 mb-1 block"
-        >
+        <label htmlFor={inputId} className="text-xs font-merriweather font-semibold uppercase tracking-wider text-gray-500 mb-1.5 block">
           {label}
-          {required && <span className="text-red-500 ml-1">*</span>}
+          {required && <span className="text-primary ml-1">*</span>}
         </label>
       )}
       <div className="relative">
@@ -71,11 +68,13 @@ const Input = ({
           disabled={disabled}
           required={required}
           className={`
-            w-full border rounded-lg px-3 py-2 text-sm font-merriweather
-            focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary
-            disabled:bg-gray-100 disabled:cursor-not-allowed
-            ${isPassword ? 'pr-10' : ''}
-            ${error ? 'border-red-500' : 'border-gray-300'}
+            w-full border rounded-xl px-4 py-3 text-sm font-merriweather text-gray-900
+            placeholder:text-gray-400 bg-white
+            transition-all duration-200
+            focus:outline-none focus:ring-2 focus:ring-primary/25 focus:border-primary
+            disabled:bg-gray-50 disabled:text-gray-400 disabled:cursor-not-allowed
+            ${isPassword ? 'pr-11' : ''}
+            ${error ? 'border-red-400 focus:ring-red-200 focus:border-red-400' : 'border-gray-200 hover:border-gray-300'}
           `.trim()}
         />
         {isPassword && (
@@ -83,7 +82,7 @@ const Input = ({
             type="button"
             tabIndex={-1}
             onClick={() => setShowPassword((prev) => !prev)}
-            className="absolute inset-y-0 right-0 flex items-center px-3 text-gray-400 hover:text-gray-600 focus:outline-none"
+            className="absolute inset-y-0 right-0 flex items-center px-3.5 text-gray-400 hover:text-primary transition-colors focus:outline-none"
             aria-label={showPassword ? 'Hide password' : 'Show password'}
           >
             {showPassword ? <EyeOffIcon /> : <EyeIcon />}
@@ -91,7 +90,9 @@ const Input = ({
         )}
       </div>
       {error && (
-        <p className="mt-1 text-sm text-red-500">{error}</p>
+        <p className="mt-1.5 text-xs text-red-500 font-merriweather flex items-center gap-1">
+          <span aria-hidden="true">✕</span> {error}
+        </p>
       )}
     </div>
   )

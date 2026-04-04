@@ -29,6 +29,7 @@ const AdminUsers          = lazy(() => import('@/features/admin/AdminUsers'))
 const AdminClanLeaders    = lazy(() => import('@/features/admin/AdminClanLeaders'))
 const AdminInterestForms  = lazy(() => import('@/features/admin/AdminInterestForms'))
 const AdminAuditLogs      = lazy(() => import('@/features/admin/AdminAuditLogs'))
+const NotFoundPage        = lazy(() => import('@/features/NotFoundPage'))
 
 export const router = createBrowserRouter([
   { path: '/',                       element: withSuspense(LandingPage) },
@@ -49,4 +50,5 @@ export const router = createBrowserRouter([
   { path: '/admin/clan-leaders',     element: <AdminRoute>{withSuspense(AdminClanLeaders)}</AdminRoute> },
   { path: '/admin/interest-forms',   element: <AdminRoute>{withSuspense(AdminInterestForms)}</AdminRoute> },
   { path: '/admin/audit-logs',       element: <AdminRoute>{withSuspense(AdminAuditLogs)}</AdminRoute> },
+  { path: '*',                       element: withSuspense(NotFoundPage) },
 ])

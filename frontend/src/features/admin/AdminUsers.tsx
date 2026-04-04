@@ -2,145 +2,115 @@ import { useState } from 'react'
 import { useSelector } from 'react-redux'
 import type { RootState } from '@/store'
 import { useListUsers, useSuspendUser, useDeleteUser } from '@/hooks/useAdmin'
-import Navbar from '@/components/layout/Navbar'
 import Sidebar from '@/components/layout/Sidebar'
-import Spinner from '@/components/ui/Spinner'
+import { SkeletonTableRows } from '@/components/ui/Skeleton'
 import Button from '@/components/ui/Button'
 import Badge from '@/components/ui/Badge'
 import Avatar from '@/components/ui/Avatar'
 import Modal from '@/components/ui/Modal'
 
+type RoleFilter = 'all' | 'general_user' | 'clan_leader' | 'admin'
+const ROLES: RoleFilter[] = ['all', 'general_user', 'clan_leader', 'admin']
+
 const AdminUsers = () => {
   const user = useSelector((s: RootState) => s.auth.user)
   const { data: users, isLoading } = useListUsers()
-  const suspendMutation = useSuspendUser()
-  const deleteMutation = useDeleteUser()
+  const suspendUser = useSuspendUser()
+  const deleteUser = useDeleteUser()
 
-  const [confirmDelete, setConfirmDelete] = useState<string | null>(null)
-  const [confirmSuspend, setConfirmSuspend] = useState<{ id: string; suspend: boolean } | null>(null)
-  const [roleFilter, setRoleFilter] = useState('')
-  const [suspendedFilter, setSuspendedFilter] = useState('')
+  const [roleFilter, setRoleFilter] = useState<RoleFilter>('all')
+  const [showSuspended, setShowSuspended] = useState(false)
+  const [suspendTarget, setSuspendTarget] = useState<{ id: string; name: string; isSuspended: boolean } | null>(null)
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null)
 
-  if (!user || isLoading) return <Spinner fullScreen />
+  if (!user) return <></>
 
   const filtered = (users ?? []).filter((u) => {
-    if (roleFilter && u.role !== roleFilter) return false
-    if (suspendedFilter === 'true' && !u.is_suspended) return false
-    if (suspendedFilter === 'false' && u.is_suspended) return false
+    if (roleFilter !== 'all' && u.role !== roleFilter) return false
+    if (showSuspended && !u.is_suspended) return false
     return true
   })
 
-  const getRoleBadge = (role: string) => {
-    if (role === 'clan_leader') return <Badge status="pending" label="Clan Leader" />
-    if (role === 'general_user') return <Badge status="active" label="General User" />
-    return <Badge status={role} label={role} />
-  }
-
   return (
-    <div className="flex min-h-screen bg-gray-50">
+    <div className="flex min-h-screen" style={{ background: '#fafaf8' }}>
       <Sidebar role={user.role} />
-
       <div className="flex-1 flex flex-col ml-64">
-        <Navbar />
-
         <main className="flex-1 p-8">
-          <h1 className="text-2xl font-bold text-gray-900 font-merriweather mb-6">Users</h1>
 
-          <div className="flex gap-3 mb-6">
-            <select
-              value={roleFilter}
-              onChange={(e) => setRoleFilter(e.target.value)}
-              className="border border-gray-300 rounded-lg px-3 py-2 text-sm font-merriweather"
-            >
-              <option value="">All Roles</option>
-              <option value="general_user">General User</option>
-              <option value="clan_leader">Clan Leader</option>
-            </select>
-            <select
-              value={suspendedFilter}
-              onChange={(e) => setSuspendedFilter(e.target.value)}
-              className="border border-gray-300 rounded-lg px-3 py-2 text-sm font-merriweather"
-            >
-              <option value="">All Statuses</option>
-              <option value="false">Active</option>
-              <option value="true">Suspended</option>
-            </select>
+          <div className="mb-7">
+            <p className="text-xs font-merriweather tracking-[0.25em] text-secondary uppercase mb-1">Admin</p>
+            <h1 className="text-2xl font-bold text-gray-900 font-merriweather">Manage Users</h1>
+            <p className="text-gray-400 text-sm mt-1 font-merriweather">{users?.length ?? 0} total users on the platform</p>
           </div>
 
-          {filtered.length === 0 && (
-            <p className="text-gray-500 text-sm text-center py-8">No users found.</p>
-          )}
+          {/* Filters */}
+          <div className="bg-white border border-gray-100 rounded-2xl p-4 mb-6 flex flex-wrap items-center gap-3 shadow-sm">
+            <div className="flex border border-gray-100 rounded-xl overflow-hidden">
+              {ROLES.map((role) => (
+                <button key={role} onClick={() => setRoleFilter(role)}
+                  className={`px-3 py-1.5 text-xs font-merriweather capitalize transition-colors ${roleFilter === role ? 'bg-primary text-white' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'}`}>
+                  {role.replace('_', ' ')}
+                </button>
+              ))}
+            </div>
+            <label className="flex items-center gap-2 text-xs font-merriweather text-gray-500 cursor-pointer ml-auto">
+              <input type="checkbox" checked={showSuspended} onChange={(e) => setShowSuspended(e.target.checked)} className="rounded accent-primary" />
+              Suspended only
+            </label>
+          </div>
 
-          {filtered.length > 0 && (
-            <div className="bg-white border border-gray-100 rounded-xl overflow-hidden">
+          {isLoading ? (
+            <div className="bg-white border border-gray-100 rounded-2xl shadow-sm overflow-hidden">
+              <div className="h-[2px] bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
               <table className="w-full">
                 <thead>
-                  <tr>
-                    {['Name', 'Email', 'Role', 'Clan', 'Status', 'Joined', 'Actions'].map((h) => (
-                      <th
-                        key={h}
-                        className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider py-3 px-4 bg-gray-50"
-                      >
-                        {h}
-                      </th>
+                  <tr className="border-b border-gray-50">{['Name','Email','Role','Status','Joined',''].map((h) => <th key={h} className="text-left text-[10px] font-merriweather font-semibold text-gray-400 uppercase tracking-widest py-3.5 px-5 bg-gray-50/50">{h}</th>)}</tr>
+                </thead>
+                <tbody><SkeletonTableRows rows={6} cols={6} /></tbody>
+              </table>
+            </div>
+          ) : filtered.length === 0 ? (
+            <div className="bg-white border border-gray-100 rounded-2xl p-16 text-center shadow-sm">
+              <p className="text-gray-400 font-merriweather text-sm">No users match the current filters.</p>
+            </div>
+          ) : (
+            <div className="bg-white border border-gray-100 rounded-2xl shadow-sm overflow-hidden">
+              <div className="h-[2px] bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-gray-50">
+                    {['User', 'Role', 'Status', 'Joined', 'Actions'].map((h) => (
+                      <th key={h} className="text-left text-[10px] font-merriweather font-semibold text-gray-400 uppercase tracking-widest py-3.5 px-5 bg-gray-50/50">{h}</th>
                     ))}
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-100">
-                  {filtered.map((u) => (
-                    <tr key={u.id} className="hover:bg-gray-50">
-                      <td className="py-3 px-4">
-                        <div className="flex items-center gap-2">
+                <tbody>
+                  {filtered.map((u, i) => (
+                    <tr key={u.id} className={`hover:bg-gray-50/70 transition-colors ${i < filtered.length - 1 ? 'border-b border-gray-50' : ''}`}>
+                      <td className="py-3.5 px-5">
+                        <div className="flex items-center gap-3">
                           <Avatar src={u.profile_picture_url} name={u.full_name} size="sm" />
-                          <span className="text-sm font-medium text-gray-900 font-merriweather">
-                            {u.full_name}
-                          </span>
+                          <div>
+                            <p className="text-sm font-semibold text-gray-900 font-merriweather">{u.full_name}</p>
+                            <p className="text-xs text-gray-400 font-merriweather">{u.email}</p>
+                          </div>
                         </div>
                       </td>
-                      <td className="py-3 px-4 text-sm text-gray-600">{u.email}</td>
-                      <td className="py-3 px-4">{getRoleBadge(u.role)}</td>
-                      <td className="py-3 px-4 text-sm text-gray-600">
-                        {u.clan_id ? `${u.clan_id.slice(0, 8)}...` : '—'}
+                      <td className="py-3.5 px-5"><span className="text-xs font-merriweather text-gray-500 capitalize">{u.role.replace('_', ' ')}</span></td>
+                      <td className="py-3.5 px-5"><Badge status={u.is_suspended ? 'suspended' : 'active'} label={u.is_suspended ? 'Suspended' : 'Active'} /></td>
+                      <td className="py-3.5 px-5 text-xs text-gray-400 font-merriweather">
+                        {new Date(u.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                       </td>
-                      <td className="py-3 px-4">
-                        <Badge
-                          status={u.is_suspended ? 'suspended' : 'active'}
-                          label={u.is_suspended ? 'Suspended' : 'Active'}
-                        />
-                      </td>
-                      <td className="py-3 px-4 text-sm text-gray-500">
-                        {new Date(u.created_at).toLocaleDateString('en-US', {
-                          month: 'short',
-                          day: 'numeric',
-                          year: 'numeric',
-                        })}
-                      </td>
-                      <td className="py-3 px-4">
-                        <div className="flex gap-2">
-                          {u.is_suspended ? (
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => setConfirmSuspend({ id: u.id, suspend: false })}
-                            >
-                              Reactivate
-                            </Button>
-                          ) : (
-                            <Button
-                              variant="danger"
-                              size="sm"
-                              onClick={() => setConfirmSuspend({ id: u.id, suspend: true })}
-                            >
-                              Suspend
-                            </Button>
-                          )}
-                          <Button
-                            variant="danger"
-                            size="sm"
-                            onClick={() => setConfirmDelete(u.id)}
-                          >
+                      <td className="py-3.5 px-5">
+                        <div className="flex items-center gap-2">
+                          <button onClick={() => setSuspendTarget({ id: u.id, name: u.full_name, isSuspended: u.is_suspended })}
+                            className={`text-xs font-merriweather px-2.5 py-1 rounded-lg border transition-colors ${u.is_suspended ? 'border-emerald-200 text-emerald-600 hover:bg-emerald-50' : 'border-amber-200 text-amber-600 hover:bg-amber-50'}`}>
+                            {u.is_suspended ? 'Unsuspend' : 'Suspend'}
+                          </button>
+                          <button onClick={() => setDeleteTarget({ id: u.id, name: u.full_name })}
+                            className="text-xs font-merriweather px-2.5 py-1 rounded-lg border border-red-200 text-red-500 hover:bg-red-50 transition-colors">
                             Delete
-                          </Button>
+                          </button>
                         </div>
                       </td>
                     </tr>
@@ -149,72 +119,38 @@ const AdminUsers = () => {
               </table>
             </div>
           )}
+
+          <Modal isOpen={!!suspendTarget} onClose={() => setSuspendTarget(null)}
+            title={suspendTarget?.isSuspended ? 'Unsuspend User' : 'Suspend User'} size="sm">
+            <p className="text-sm text-gray-600 font-merriweather mb-6 leading-relaxed">
+              {suspendTarget?.isSuspended
+                ? `Restore full access for ${suspendTarget.name}?`
+                : `This will prevent ${suspendTarget?.name} from accessing Kinfolk. You can reverse this at any time.`}
+            </p>
+            <div className="flex gap-3 justify-end">
+              <Button variant="outline" size="sm" onClick={() => setSuspendTarget(null)}>Cancel</Button>
+              <Button variant={suspendTarget?.isSuspended ? 'primary' : 'secondary'} size="sm"
+                isLoading={suspendUser.isPending}
+                onClick={() => { if (!suspendTarget) return; suspendUser.mutate({ id: suspendTarget.id, suspend: !suspendTarget.isSuspended }, { onSuccess: () => setSuspendTarget(null) }) }}>
+                {suspendTarget?.isSuspended ? 'Unsuspend' : 'Suspend'}
+              </Button>
+            </div>
+          </Modal>
+
+          <Modal isOpen={!!deleteTarget} onClose={() => setDeleteTarget(null)} title="Delete User" size="sm">
+            <p className="text-sm text-gray-600 font-merriweather mb-6 leading-relaxed">
+              Permanently delete <strong>{deleteTarget?.name}</strong>? This cannot be undone.
+            </p>
+            <div className="flex gap-3 justify-end">
+              <Button variant="outline" size="sm" onClick={() => setDeleteTarget(null)}>Cancel</Button>
+              <Button variant="danger" size="sm" isLoading={deleteUser.isPending}
+                onClick={() => { if (!deleteTarget) return; deleteUser.mutate(deleteTarget.id, { onSuccess: () => setDeleteTarget(null) }) }}>
+                Delete User
+              </Button>
+            </div>
+          </Modal>
         </main>
       </div>
-
-      {/* Suspend/Reactivate confirm modal */}
-      <Modal
-        isOpen={!!confirmSuspend}
-        onClose={() => setConfirmSuspend(null)}
-        title="Confirm Action"
-        size="sm"
-      >
-        <p className="text-sm text-gray-600 font-merriweather mb-6">
-          {confirmSuspend?.suspend
-            ? 'Are you sure you want to suspend this user?'
-            : 'Are you sure you want to reactivate this user?'}
-        </p>
-        <div className="flex gap-3 justify-end">
-          <Button variant="outline" size="sm" onClick={() => setConfirmSuspend(null)}>
-            Cancel
-          </Button>
-          <Button
-            variant={confirmSuspend?.suspend ? 'danger' : 'primary'}
-            size="sm"
-            isLoading={suspendMutation.isPending}
-            onClick={() => {
-              if (confirmSuspend) {
-                suspendMutation.mutate(confirmSuspend, {
-                  onSettled: () => setConfirmSuspend(null),
-                })
-              }
-            }}
-          >
-            Confirm
-          </Button>
-        </div>
-      </Modal>
-
-      {/* Delete confirm modal */}
-      <Modal
-        isOpen={!!confirmDelete}
-        onClose={() => setConfirmDelete(null)}
-        title="Delete User"
-        size="sm"
-      >
-        <p className="text-sm text-gray-600 font-merriweather mb-6">
-          Are you sure? This action cannot be undone.
-        </p>
-        <div className="flex gap-3 justify-end">
-          <Button variant="outline" size="sm" onClick={() => setConfirmDelete(null)}>
-            Cancel
-          </Button>
-          <Button
-            variant="danger"
-            size="sm"
-            isLoading={deleteMutation.isPending}
-            onClick={() => {
-              if (confirmDelete) {
-                deleteMutation.mutate(confirmDelete, {
-                  onSettled: () => setConfirmDelete(null),
-                })
-              }
-            }}
-          >
-            Delete Account
-          </Button>
-        </div>
-      </Modal>
     </div>
   )
 }

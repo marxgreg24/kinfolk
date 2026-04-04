@@ -4,7 +4,6 @@ import { useSelector } from 'react-redux'
 import type { RootState } from '@/store'
 import { validateClanName } from '@/api/clans'
 import { useCreateClan } from '@/hooks/useClan'
-import Navbar from '@/components/layout/Navbar'
 import Sidebar from '@/components/layout/Sidebar'
 import Spinner from '@/components/ui/Spinner'
 import Input from '@/components/ui/Input'
@@ -52,7 +51,6 @@ const CreateClanPage = () => {
       <Sidebar role={user.role} />
 
       <div className="flex-1 flex flex-col ml-64">
-        <Navbar />
 
         <main className="flex-1 p-8 max-w-xl">
           <h1 className="text-2xl font-bold text-gray-900 font-merriweather mb-6">

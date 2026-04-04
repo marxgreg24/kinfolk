@@ -5,6 +5,7 @@ import { useSelector } from 'react-redux'
 import type { RootState } from '@/store'
 import Avatar from '@/components/ui/Avatar'
 import Button from '@/components/ui/Button'
+import KinfolkWordmark from '@/components/ui/KinfolkWordmark'
 
 const Navbar = () => {
   const { isSignedIn, signOut } = useAuth()
@@ -38,11 +39,11 @@ const Navbar = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="h-16 flex items-center justify-between">
           {/* Logo */}
-          <Link
-            to={logoTo}
-            className="font-merriweather font-bold text-2xl text-primary"
-          >
-            Kinfolk
+          <Link to={logoTo} aria-label="Kinfolk home">
+            <KinfolkWordmark
+              uppercase
+              className="font-merriweather font-bold text-2xl tracking-[0.1em] text-primary"
+            />
           </Link>
 
           {/* Right side */}
