@@ -1,0 +1,632 @@
+{
+  "info": {
+    "name": "Kinfolk API",
+    "description": "Complete API collection for the Kinfolk genealogy platform",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "base_url", "value": "http://localhost:8081", "type": "string" },
+    { "key": "clerk_token", "value": "", "type": "string" },
+    { "key": "clan_id", "value": "", "type": "string" },
+    { "key": "user_id", "value": "", "type": "string" },
+    { "key": "member_id", "value": "", "type": "string" },
+    { "key": "conflict_id", "value": "", "type": "string" },
+    { "key": "suggestion_id", "value": "", "type": "string" },
+    { "key": "interest_form_id", "value": "", "type": "string" }
+  ],
+  "item": [
+    {
+      "name": "Health",
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/health",
+              "host": ["{{base_url}}"],
+              "path": ["health"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Sync User",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{clerk_token}}", "type": "text" },
+              { "key": "Content-Type", "value": "application/json", "type": "text" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"email\":\"user@example.com\",\"full_name\":\"Nakato Rose\",\"clan_id\":\"{{clan_id}}\"}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/auth/sync",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "auth", "sync"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Users",
+      "item": [
+        {
+          "name": "Get Me",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{clerk_token}}", "type": "text" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/users/me",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "users", "me"]
+            }
+          }
+        },
+        {
+          "name": "Update Me",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{clerk_token}}", "type": "text" },
+              { "key": "Content-Type", "value": "application/json", "type": "text" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"full_name\":\"Nakato Rose Kiggundu\",\"phone\":\"+256700000000\"}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/users/me",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "users", "me"]
+            }
+          }
+        },
+        {
+          "name": "Delete Me",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{clerk_token}}", "type": "text" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/users/me",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "users", "me"]
+            }
+          }
+        },
+        {
+          "name": "Complete Profile",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{clerk_token}}", "type": "text" },
+              { "key": "Content-Type", "value": "application/json", "type": "text" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"birth_year\":1990,\"gender\":\"female\",\"profile_picture_url\":\"https://res.cloudinary.com/kinfolk/image/upload/sample.jpg\",\"phone\":\"+256700000000\"}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/users/me/profile",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "users", "me", "profile"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Clans",
+      "item": [
+        {
+          "name": "Validate Clan Name",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/clans/validate?name=Buganda",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "clans", "validate"],
+              "query": [{ "key": "name", "value": "Buganda" }]
+            }
+          }
+        },
+        {
+          "name": "Get Clan By ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{clerk_token}}", "type": "text" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/clans/{{clan_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "clans", "{{clan_id}}"]
+            }
+          }
+        },
+        {
+          "name": "Get Clan Members",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{clerk_token}}", "type": "text" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/clans/{{clan_id}}/members",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "clans", "{{clan_id}}", "members"]
+            }
+          }
+        },
+        {
+          "name": "Get Clan Relationships",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{clerk_token}}", "type": "text" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/clans/{{clan_id}}/relationships",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "clans", "{{clan_id}}", "relationships"]
+            }
+          }
+        },
+        {
+          "name": "Get Clan Tree",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{clerk_token}}", "type": "text" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/clans/{{clan_id}}/tree",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "clans", "{{clan_id}}", "tree"]
+            }
+          }
+        },
+        {
+          "name": "Export Clan GEDCOM",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{clerk_token}}", "type": "text" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/clans/{{clan_id}}/export",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "clans", "{{clan_id}}", "export"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Members",
+      "item": [
+        {
+          "name": "Add Member",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{clerk_token}}", "type": "text" },
+              { "key": "Content-Type", "value": "application/json", "type": "text" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"full_name\":\"Kato John\",\"email\":\"kato@example.com\",\"profile_picture_url\":\"\",\"relationship_to_leader\":\"child\"}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/clan-leader/clans/{{clan_id}}/members",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "clan-leader", "clans", "{{clan_id}}", "members"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Relationships",
+      "item": [
+        {
+          "name": "Submit Relationship",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{clerk_token}}", "type": "text" },
+              { "key": "Content-Type", "value": "application/json", "type": "text" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"to_member_id\":\"{{member_id}}\",\"clan_id\":\"{{clan_id}}\",\"relationship_type\":\"parent\"}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/relationships",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "relationships"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Conflicts",
+      "item": [
+        {
+          "name": "List Conflicts",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{clerk_token}}", "type": "text" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/clan-leader/conflicts?clan_id={{clan_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "clan-leader", "conflicts"],
+              "query": [{ "key": "clan_id", "value": "{{clan_id}}" }]
+            }
+          }
+        },
+        {
+          "name": "Resolve Conflict",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{clerk_token}}", "type": "text" },
+              { "key": "Content-Type", "value": "application/json", "type": "text" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"resolution\":\"approve_original\"}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/clan-leader/conflicts/{{conflict_id}}/resolve",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "clan-leader", "conflicts", "{{conflict_id}}", "resolve"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Match Suggestions",
+      "item": [
+        {
+          "name": "List Match Suggestions",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{clerk_token}}", "type": "text" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/clan-leader/match-suggestions?clan_id={{clan_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "clan-leader", "match-suggestions"],
+              "query": [{ "key": "clan_id", "value": "{{clan_id}}" }]
+            }
+          }
+        },
+        {
+          "name": "Approve Match Suggestion",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{clerk_token}}", "type": "text" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/clan-leader/match-suggestions/{{suggestion_id}}/approve",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "clan-leader", "match-suggestions", "{{suggestion_id}}", "approve"]
+            }
+          }
+        },
+        {
+          "name": "Reject Match Suggestion",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{clerk_token}}", "type": "text" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/clan-leader/match-suggestions/{{suggestion_id}}/reject",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "clan-leader", "match-suggestions", "{{suggestion_id}}", "reject"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Clan Leader",
+      "item": [
+        {
+          "name": "Create Clan",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{clerk_token}}", "type": "text" },
+              { "key": "Content-Type", "value": "application/json", "type": "text" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"name\":\"Buganda\"}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/clan-leader/clans",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "clan-leader", "clans"]
+            }
+          }
+        },
+        {
+          "name": "Create Clan (Admin)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{clerk_token}}", "type": "text" },
+              { "key": "Content-Type", "value": "application/json", "type": "text" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"name\":\"Buganda\",\"leader_id\":\"{{user_id}}\"}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/clans",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "admin", "clans"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Chat",
+      "item": [
+        {
+          "name": "Get Chat Token",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{clerk_token}}", "type": "text" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/chat/token",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "chat", "token"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Interest Forms",
+      "item": [
+        {
+          "name": "Submit Interest Form",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json", "type": "text" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"full_name\":\"Ssali David\",\"clan_name\":\"Buganda\",\"email\":\"ssali@example.com\",\"phone\":\"+256700000001\",\"region\":\"Central Uganda\",\"expected_members\":45,\"message\":\"Our clan has been trying to preserve our history for years.\"}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/interest-forms",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "interest-forms"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Admin",
+      "item": [
+        {
+          "name": "List All Users",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{clerk_token}}", "type": "text" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/users",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "admin", "users"]
+            }
+          }
+        },
+        {
+          "name": "List Users (filtered by role)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{clerk_token}}", "type": "text" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/users?role=clan_leader",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "admin", "users"],
+              "query": [{ "key": "role", "value": "clan_leader" }]
+            }
+          }
+        },
+        {
+          "name": "List Users (filtered by suspended)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{clerk_token}}", "type": "text" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/users?is_suspended=true",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "admin", "users"],
+              "query": [{ "key": "is_suspended", "value": "true" }]
+            }
+          }
+        },
+        {
+          "name": "Create Clan Leader",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{clerk_token}}", "type": "text" },
+              { "key": "Content-Type", "value": "application/json", "type": "text" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"full_name\":\"Namukasa Joyce\",\"email\":\"joyce@example.com\",\"phone\":\"+256700000002\"}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/clan-leaders",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "admin", "clan-leaders"]
+            }
+          }
+        },
+        {
+          "name": "Suspend User",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{clerk_token}}", "type": "text" },
+              { "key": "Content-Type", "value": "application/json", "type": "text" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"suspend\":true}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/users/{{user_id}}/suspend",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "admin", "users", "{{user_id}}", "suspend"]
+            }
+          }
+        },
+        {
+          "name": "Delete User",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{clerk_token}}", "type": "text" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/users/{{user_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "admin", "users", "{{user_id}}"]
+            }
+          }
+        },
+        {
+          "name": "List Audit Logs",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{clerk_token}}", "type": "text" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/audit-logs",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "admin", "audit-logs"]
+            }
+          }
+        },
+        {
+          "name": "List Audit Logs (filtered)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{clerk_token}}", "type": "text" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/audit-logs?action=clan_created&from=2026-01-01T00:00:00Z",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "admin", "audit-logs"],
+              "query": [
+                { "key": "action", "value": "clan_created" },
+                { "key": "from", "value": "2026-01-01T00:00:00Z" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "List Interest Forms",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{clerk_token}}", "type": "text" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/interest-forms",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "admin", "interest-forms"]
+            }
+          }
+        },
+        {
+          "name": "List Interest Forms (pending)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{clerk_token}}", "type": "text" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/interest-forms?status=pending",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "admin", "interest-forms"],
+              "query": [{ "key": "status", "value": "pending" }]
+            }
+          }
+        },
+        {
+          "name": "Update Interest Form Status",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{clerk_token}}", "type": "text" },
+              { "key": "Content-Type", "value": "application/json", "type": "text" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"status\":\"approved\"}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/interest-forms/{{interest_form_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "admin", "interest-forms", "{{interest_form_id}}"]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,11 @@
+services:
+  app:
+    build:
+      context: .
+      target: dev
+    volumes:
+      - .:/app
+    env_file:
+      - .env
+    ports:
+      - "8081:8081"

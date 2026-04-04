@@ -1,0 +1,28 @@
+# Node
+node_modules/
+dist/
+build/
+.next/
+*.local
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Go binaries and build output
+/bin/
+tmp/
+*.exe
+*.out
+
+# Air hot reload
+tmp/
+
+# Editors
+.DS_Store
+.vscode/
+.idea/
+
+# Docker build artifacts
+*.tar
