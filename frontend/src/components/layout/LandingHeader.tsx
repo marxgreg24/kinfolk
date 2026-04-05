@@ -20,7 +20,7 @@ const LandingHeader = ({ onRegisterInterest }: LandingHeaderProps) => {
   const [menuOpen, setMenuOpen] = useState(false)
 
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 40)
+    const onScroll = () => setScrolled(window.scrollY > 80)
     window.addEventListener('scroll', onScroll, { passive: true })
     return () => window.removeEventListener('scroll', onScroll)
   }, [])
@@ -53,29 +53,14 @@ const LandingHeader = ({ onRegisterInterest }: LandingHeaderProps) => {
 
   return (
     <>
-      {/* ── Announcement bar ──────────────────────────────────── */}
-      <div
-        className={`
-          fixed top-0 left-0 right-0 z-50 overflow-hidden transition-all duration-500
-          ${scrolled ? 'max-h-0' : 'max-h-8'}
-        `}
-      >
-        <div className="bg-primary flex items-center justify-center gap-3 py-1 px-4">
-          {/* Decorative rules flanking text */}
-          <span className="hidden sm:block flex-1 max-w-[80px] h-px bg-white/30" />
-          <p className="text-white/90 text-[10px] sm:text-xs font-merriweather tracking-widest uppercase text-center">
-            Now connecting Ugandan families across the world
-          </p>
-          <span className="hidden sm:block flex-1 max-w-[80px] h-px bg-white/30" />
-        </div>
-      </div>
-
       {/* ── Main header ───────────────────────────────────────── */}
       <header
         className={`
-          fixed left-0 right-0 z-40 bg-white transition-all duration-500
-          ${scrolled ? 'top-0 shadow-[0_2px_20px_rgba(0,0,0,0.08)]' : 'top-8'}
-          border-b border-gray-100
+          fixed top-0 left-0 right-0 z-40 transition-all duration-500
+          ${scrolled
+            ? 'bg-white border-b border-gray-100 shadow-[0_2px_20px_rgba(0,0,0,0.08)]'
+            : 'bg-transparent border-b border-white/10'
+          }
         `}
       >
         {/* ── Desktop: split nav ────────────────────────────────── */}
@@ -90,10 +75,10 @@ const LandingHeader = ({ onRegisterInterest }: LandingHeaderProps) => {
                   <button
                     key={link.href}
                     onClick={() => handleNavClick(link.href)}
-                    className="group relative px-5 py-5 text-sm font-merriweather text-gray-500 hover:text-primary transition-colors duration-200 flex items-center gap-2"
+                    className={`group relative px-5 py-5 text-sm font-merriweather transition-colors duration-200 flex items-center gap-2 ${scrolled ? 'text-gray-500 hover:text-primary' : 'text-white/80 hover:text-white'}`}
                   >
                     {i > 0 && (
-                      <span className="text-gray-200 select-none" aria-hidden="true">◆</span>
+                      <span className={`select-none ${scrolled ? 'text-gray-200' : 'text-white/25'}`} aria-hidden="true">◆</span>
                     )}
                     {link.label}
                     <span className="absolute bottom-0 left-5 right-5 h-[2px] bg-primary scale-x-0 group-hover:scale-x-100 transition-transform duration-200 origin-left" />
@@ -102,13 +87,13 @@ const LandingHeader = ({ onRegisterInterest }: LandingHeaderProps) => {
               </nav>
 
               {/* Center — wordmark */}
-              <div className="flex flex-col items-center justify-center px-10 py-3 flex-shrink-0 border-x border-gray-100">
+              <div className={`flex flex-col items-center justify-center px-10 py-3 flex-shrink-0 border-x transition-colors duration-500 ${scrolled ? 'border-gray-100' : 'border-white/10'}`}>
                 <Link to="/" aria-label="Kinfolk home" className="group flex flex-col items-center">
                   <KinfolkWordmark
                     uppercase
-                    className="font-merriweather font-bold text-2xl tracking-[0.12em] text-gray-900 group-hover:text-primary transition-colors duration-300"
+                    className={`font-merriweather font-bold text-2xl tracking-[0.12em] transition-colors duration-300 ${scrolled ? 'text-gray-900 group-hover:text-primary' : 'text-white group-hover:text-primary'}`}
                   />
-                  <span className="text-[9px] font-merriweather tracking-[0.35em] text-secondary uppercase mt-0.5">
+                  <span className={`text-[9px] font-merriweather tracking-[0.35em] uppercase mt-0.5 transition-colors duration-300 ${scrolled ? 'text-secondary' : 'text-primary/70'}`}>
                     Preserve Your Roots
                   </span>
                 </Link>
@@ -120,7 +105,7 @@ const LandingHeader = ({ onRegisterInterest }: LandingHeaderProps) => {
                   <button
                     key={link.href}
                     onClick={() => handleNavClick(link.href)}
-                    className="group relative px-5 py-5 text-sm font-merriweather text-gray-500 hover:text-primary transition-colors duration-200"
+                    className={`group relative px-5 py-5 text-sm font-merriweather transition-colors duration-200 ${scrolled ? 'text-gray-500 hover:text-primary' : 'text-white/80 hover:text-white'}`}
                   >
                     {link.label}
                     <span className="absolute bottom-0 left-5 right-5 h-[2px] bg-primary scale-x-0 group-hover:scale-x-100 transition-transform duration-200 origin-left" />
@@ -128,11 +113,11 @@ const LandingHeader = ({ onRegisterInterest }: LandingHeaderProps) => {
                 ))}
 
                 {/* Thin separator */}
-                <span className="mx-3 h-5 w-px bg-gray-200" aria-hidden="true" />
+                <span className={`mx-3 h-5 w-px ${scrolled ? 'bg-gray-200' : 'bg-white/20'}`} aria-hidden="true" />
 
                 <Link
                   to="/login"
-                  className="px-4 py-5 text-sm font-merriweather text-gray-500 hover:text-primary transition-colors duration-200"
+                  className={`px-4 py-5 text-sm font-merriweather transition-colors duration-200 ${scrolled ? 'text-gray-500 hover:text-primary' : 'text-white/80 hover:text-white'}`}
                 >
                   Sign In
                 </Link>
@@ -160,7 +145,7 @@ const LandingHeader = ({ onRegisterInterest }: LandingHeaderProps) => {
             <Link to="/" aria-label="Kinfolk home">
               <KinfolkWordmark
                 uppercase
-                className="font-merriweather font-bold text-lg tracking-[0.08em] text-gray-900"
+                className={`font-merriweather font-bold text-lg tracking-[0.08em] transition-colors duration-300 ${scrolled ? 'text-gray-900' : 'text-white'}`}
               />
             </Link>
 
@@ -184,13 +169,13 @@ const LandingHeader = ({ onRegisterInterest }: LandingHeaderProps) => {
                 className="flex flex-col items-end gap-[5px] w-8 h-8 justify-center"
               >
                 <span
-                  className={`block h-[1.5px] bg-gray-800 rounded-full transition-all duration-300 ${menuOpen ? 'w-5 rotate-45 translate-y-[6.5px]' : 'w-5'}`}
+                  className={`block h-[1.5px] rounded-full transition-all duration-300 ${scrolled || menuOpen ? 'bg-gray-800' : 'bg-white'} ${menuOpen ? 'w-5 rotate-45 translate-y-[6.5px]' : 'w-5'}`}
                 />
                 <span
-                  className={`block h-[1.5px] bg-gray-800 rounded-full transition-all duration-300 ${menuOpen ? 'w-5 opacity-0' : 'w-3.5'}`}
+                  className={`block h-[1.5px] rounded-full transition-all duration-300 ${scrolled || menuOpen ? 'bg-gray-800' : 'bg-white'} ${menuOpen ? 'w-5 opacity-0' : 'w-3.5'}`}
                 />
                 <span
-                  className={`block h-[1.5px] bg-gray-800 rounded-full transition-all duration-300 ${menuOpen ? 'w-5 -rotate-45 -translate-y-[6.5px]' : 'w-4'}`}
+                  className={`block h-[1.5px] rounded-full transition-all duration-300 ${scrolled || menuOpen ? 'bg-gray-800' : 'bg-white'} ${menuOpen ? 'w-5 -rotate-45 -translate-y-[6.5px]' : 'w-4'}`}
                 />
               </button>
             </div>
@@ -219,7 +204,7 @@ const LandingHeader = ({ onRegisterInterest }: LandingHeaderProps) => {
             transition-transform duration-300 ease-in-out
             ${menuOpen ? 'translate-y-0' : '-translate-y-full'}
           `}
-          style={{ paddingTop: scrolled ? '56px' : '88px' }}
+          style={{ paddingTop: '56px' }}
         >
           {/* Decorative gold top strip */}
           <div className="h-[2px] bg-gradient-to-r from-transparent via-primary to-transparent" />
@@ -293,8 +278,6 @@ const LandingHeader = ({ onRegisterInterest }: LandingHeaderProps) => {
         </div>
       </div>
 
-      {/* Spacer for fixed header height */}
-      <div className={`${scrolled ? 'h-[57px]' : 'h-[89px]'} lg:${scrolled ? 'h-[65px]' : 'h-[97px]'} transition-all duration-500`} />
     </>
   )
 }

@@ -6,6 +6,7 @@ import type { AppDispatch } from '@/store'
 import { setUser } from '@/store/slices/authSlice'
 import { validateClanName } from '@/api/clans'
 import { syncUser } from '@/api/auth'
+import { getPostAuthPath } from '@/utils/profile'
 import Input from '@/components/ui/Input'
 import Button from '@/components/ui/Button'
 import KinfolkWordmark from '@/components/ui/KinfolkWordmark'
@@ -19,6 +20,7 @@ const SignupPage = () => {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [clanName, setClanName] = useState('')
+  const [clanId, setClanId] = useState<string | null>(null)
   const [clanValid, setClanValid] = useState<boolean | null>(null)
   const [clanValidating, setClanValidating] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -26,12 +28,16 @@ const SignupPage = () => {
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
-    if (!clanName.trim()) { setClanValid(null); setClanValidating(false); return }
-    setClanValidating(true); setClanValid(null)
+    if (!clanName.trim()) { setClanValid(null); setClanId(null); setClanValidating(false); return }
+    setClanValidating(true); setClanValid(null); setClanId(null)
     if (debounceRef.current) clearTimeout(debounceRef.current)
     debounceRef.current = setTimeout(async () => {
-      try { setClanValid((await validateClanName(clanName.trim())).available) }
-      catch { setClanValid(null) }
+      try {
+        const result = await validateClanName(clanName.trim())
+        setClanValid(result.available)
+        setClanId(result.available ? result.clan_id : null)
+      }
+      catch { setClanValid(null); setClanId(null) }
       finally { setClanValidating(false) }
     }, 500)
     return () => { if (debounceRef.current) clearTimeout(debounceRef.current) }
@@ -52,11 +58,9 @@ const SignupPage = () => {
     }
 
     try {
-      const user = await syncUser({ clerk_user_id: signUp.createdUserId ?? '', email, full_name: fullName, clan_name: clanName })
+      const user = await syncUser({ email, full_name: fullName, clan_id: clanId ?? undefined })
       dispatch(setUser(user))
-      if (user.role === 'admin') navigate('/admin')
-      else if (user.role === 'clan_leader') navigate(user.password_reset_required ? '/reset-password' : '/clan-leader/dashboard')
-      else navigate('/complete-profile')
+      navigate(getPostAuthPath(user))
     } catch {
       setError('Failed to sync your account. Please try again.')
     } finally { setIsSubmitting(false) }
@@ -69,10 +73,16 @@ const SignupPage = () => {
       {/* ── Left decorative panel ── */}
       <div
         className="hidden lg:flex flex-col w-[42%] relative overflow-hidden"
-        style={{ background: 'linear-gradient(155deg, #141414 0%, #1c1406 55%, #111 100%)' }}
+        style={{
+          backgroundImage: "url('https://res.cloudinary.com/df3lhzzy7/image/upload/v1775388692/sign_in_pages_bg_uahfmz.jpg')",
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+        }}
       >
-        <div className="h-[2px] bg-gradient-to-r from-transparent via-primary to-transparent" />
-        <div className="flex flex-col flex-1 p-12 pt-14">
+        {/* Dark overlay */}
+        <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/60 to-black/80" aria-hidden="true" />
+        <div className="relative z-10 h-[2px] bg-gradient-to-r from-transparent via-primary to-transparent" />
+        <div className="relative z-10 flex flex-col flex-1 p-12 pt-14">
           <KinfolkWordmark uppercase className="font-merriweather font-bold text-2xl tracking-[0.15em] text-white" />
           <p className="text-[9px] font-merriweather tracking-[0.35em] text-primary/70 uppercase mt-1">
             Preserve Your Roots
@@ -110,7 +120,7 @@ const SignupPage = () => {
             <circle cx="245" cy="160" r="5" fill="#CDB53F"/>
           </svg>
         </div>
-        <p className="p-12 pt-0 text-white/20 text-[10px] font-merriweather tracking-widest uppercase">
+        <p className="relative z-10 p-12 pt-0 text-white/20 text-[10px] font-merriweather tracking-widest uppercase">
           © {new Date().getFullYear()} Kinfolk
         </p>
       </div>

@@ -1,16 +1,15 @@
-import { useState, useRef } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useSelector } from 'react-redux'
-import toast from 'react-hot-toast'
+import notify from '@/utils/toast'
 import type { RootState } from '@/store'
 import { useCompleteProfile } from '@/hooks/useAuth'
+import { isProfileComplete } from '@/utils/profile'
 import Input from '@/components/ui/Input'
 import Button from '@/components/ui/Button'
 import Avatar from '@/components/ui/Avatar'
 import KinfolkWordmark from '@/components/ui/KinfolkWordmark'
-
-const CLOUDINARY_CLOUD = 'kinfolk'
-const CLOUDINARY_PRESET = 'kinfolk_unsigned'
+import apiClient from '@/api/axios'
 
 const CompleteProfilePage = () => {
   const navigate = useNavigate()
@@ -25,6 +24,12 @@ const CompleteProfilePage = () => {
   const completeProfile = useCompleteProfile()
   const fileInputRef = useRef<HTMLInputElement>(null)
 
+  useEffect(() => {
+    if (user && isProfileComplete(user)) {
+      navigate('/dashboard', { replace: true })
+    }
+  }, [navigate, user])
+
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
@@ -32,11 +37,10 @@ const CompleteProfilePage = () => {
     try {
       const form = new FormData()
       form.append('file', file)
-      form.append('upload_preset', CLOUDINARY_PRESET)
-      const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD}/image/upload`, { method: 'POST', body: form })
-      if (!res.ok) throw new Error('Upload failed')
-      const data = (await res.json()) as { secure_url: string }
-      setProfilePictureUrl(data.secure_url)
+      const res = await apiClient.post<{ url: string }>('/api/v1/upload/photo', form, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      })
+      setProfilePictureUrl(res.data.url)
     } catch {
       setUploadError('Photo upload failed. Please try again.')
     } finally {
@@ -44,12 +48,19 @@ const CompleteProfilePage = () => {
     }
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    completeProfile.mutate(
-      { birth_year: parseInt(birthYear, 10), gender, phone, profile_picture_url: profilePictureUrl },
-      { onSuccess: () => navigate('/dashboard'), onError: () => toast.error('Failed to save your profile.') },
-    )
+    try {
+      await completeProfile.mutateAsync({
+        birth_year: parseInt(birthYear, 10),
+        gender,
+        phone,
+        profile_picture_url: profilePictureUrl,
+      })
+      navigate('/dashboard')
+    } catch {
+      notify.error('Failed to save your profile.')
+    }
   }
 
   const currentYear = new Date().getFullYear()

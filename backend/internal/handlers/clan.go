@@ -98,6 +98,18 @@ func (h *ClanHandler) Create(c *gin.Context) {
 	createdResponse(c, clan)
 }
 
+// ListAll returns all clans. Used by admin to display clan names alongside leader accounts.
+//
+// GET /admin/clans
+func (h *ClanHandler) ListAll(c *gin.Context) {
+	clans, err := h.clanSvc.ListAll(c.Request.Context())
+	if err != nil {
+		errorResponse(c, http.StatusInternalServerError, err.Error())
+		return
+	}
+	successResponse(c, clans)
+}
+
 // CreateForAdmin creates a new clan on behalf of a specified clan leader.
 // Used by admins who can assign any existing clan_leader user as the owner.
 //

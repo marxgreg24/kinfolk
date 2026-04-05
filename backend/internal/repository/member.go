@@ -22,7 +22,15 @@ func NewMemberRepository(db *sqlx.DB) *MemberRepository {
 func (r *MemberRepository) CreateMember(ctx context.Context, member *models.Member) error {
 	_, err := r.db.ExecContext(ctx, `
 		INSERT INTO members (id, clan_id, full_name, email, profile_picture_url, user_id, invited_by, created_at, updated_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, NOW(), NOW())`,
+		VALUES ($1, $2, $3, $4, $5, $6, $7, NOW(), NOW())
+		ON CONFLICT (id) DO UPDATE SET
+			clan_id = EXCLUDED.clan_id,
+			full_name = EXCLUDED.full_name,
+			email = EXCLUDED.email,
+			profile_picture_url = EXCLUDED.profile_picture_url,
+			user_id = EXCLUDED.user_id,
+			invited_by = EXCLUDED.invited_by,
+			updated_at = NOW()`,
 		member.ID, member.ClanID, member.FullName, member.Email,
 		member.ProfilePictureURL, member.UserID, member.InvitedBy,
 	)
@@ -40,6 +48,18 @@ func (r *MemberRepository) GetMemberByID(ctx context.Context, id string) (*model
 	}
 	if err != nil {
 		return nil, fmt.Errorf("repository.GetMemberByID: %w", err)
+	}
+	return &m, nil
+}
+
+func (r *MemberRepository) GetMemberByUserID(ctx context.Context, userID string) (*models.Member, error) {
+	var m models.Member
+	err := r.db.GetContext(ctx, &m, `SELECT * FROM members WHERE user_id = $1 LIMIT 1`, userID)
+	if err == sql.ErrNoRows {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, fmt.Errorf("repository.GetMemberByUserID: %w", err)
 	}
 	return &m, nil
 }

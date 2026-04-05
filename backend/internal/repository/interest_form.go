@@ -52,6 +52,15 @@ func (r *InterestFormRepository) ListInterestForms(ctx context.Context, status s
 	return forms, nil
 }
 
+func (r *InterestFormRepository) GetInterestForm(ctx context.Context, id string) (*models.InterestForm, error) {
+	var form models.InterestForm
+	err := r.db.GetContext(ctx, &form, `SELECT * FROM interest_forms WHERE id = $1`, id)
+	if err != nil {
+		return nil, fmt.Errorf("repository.GetInterestForm: %w", err)
+	}
+	return &form, nil
+}
+
 func (r *InterestFormRepository) UpdateInterestFormStatus(ctx context.Context, id, status string) error {
 	_, err := r.db.ExecContext(ctx,
 		`UPDATE interest_forms SET status = $1 WHERE id = $2`,

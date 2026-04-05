@@ -1,37 +1,93 @@
 import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { useSignIn, useAuth } from '@clerk/clerk-react'
+import { useSignIn, useAuth, useUser } from '@clerk/clerk-react'
 import { useDispatch } from 'react-redux'
 import type { AppDispatch } from '@/store'
 import { setUser } from '@/store/slices/authSlice'
 import { getMe } from '@/api/users'
+import { syncUser } from '@/api/auth'
+import { getPostAuthPath } from '@/utils/profile'
 import Input from '@/components/ui/Input'
 import Button from '@/components/ui/Button'
 import KinfolkWordmark from '@/components/ui/KinfolkWordmark'
 
+const ACCOUNT_LOAD_RETRY_DELAYS_MS = [150, 300, 600, 1000]
+
+const wait = (delayMs: number) => new Promise((resolve) => {
+  window.setTimeout(resolve, delayMs)
+})
+
 const LoginPage = () => {
   const { signIn, isLoaded, setActive } = useSignIn()
   const { isSignedIn } = useAuth()
+  const { user: clerkUser } = useUser()
   const navigate = useNavigate()
   const dispatch = useDispatch<AppDispatch>()
-
-  // Redirect already-authenticated users to their dashboard
-  useEffect(() => {
-    if (!isSignedIn) return
-    getMe()
-      .then((user) => {
-        dispatch(setUser(user))
-        if (user.role === 'admin') navigate('/admin', { replace: true })
-        else if (user.role === 'clan_leader') navigate(user.password_reset_required ? '/reset-password' : '/clan-leader/dashboard', { replace: true })
-        else navigate('/complete-profile', { replace: true })
-      })
-      .catch(() => {/* session exists but profile fetch failed — let them stay on login */})
-  }, [isSignedIn]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isBootstrappingSession, setIsBootstrappingSession] = useState(false)
   const [error, setError] = useState('')
+
+  const loadCurrentUser = async () => {
+    let lastError: unknown = null
+
+    for (const delayMs of [0, ...ACCOUNT_LOAD_RETRY_DELAYS_MS]) {
+      if (delayMs > 0) await wait(delayMs)
+
+      try {
+        const user = await getMe()
+        dispatch(setUser(user))
+        return user
+      } catch (err: unknown) {
+        const status = (err as { response?: { status?: number } }).response?.status
+
+        // User authenticated in Clerk but DB record missing (sync failed at sign-up).
+        // Recover by creating the record now and skip retries.
+        if (status === 404 && clerkUser) {
+          const synced = await syncUser({
+            email: clerkUser.primaryEmailAddress?.emailAddress ?? '',
+            full_name: clerkUser.fullName ?? clerkUser.firstName ?? '',
+          })
+          dispatch(setUser(synced))
+          return synced
+        }
+
+        lastError = err
+      }
+    }
+
+    throw lastError
+  }
+
+  // Redirect already-authenticated users to their dashboard
+  useEffect(() => {
+    if (!isSignedIn) return
+    let isMounted = true
+
+    setError('')
+    setIsBootstrappingSession(true)
+
+    void loadCurrentUser()
+      .then((user) => {
+        if (!isMounted) return
+        navigate(getPostAuthPath(user), { replace: true })
+      })
+      .catch(() => {
+        if (!isMounted) return
+        setError('Unable to load your account. Please refresh and try again.')
+      })
+      .finally(() => {
+        if (!isMounted) return
+        setIsBootstrappingSession(false)
+        setIsSubmitting(false)
+      })
+
+    return () => {
+      isMounted = false
+    }
+  }, [dispatch, isSignedIn, navigate])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -42,8 +98,11 @@ const LoginPage = () => {
     try {
       const result = await signIn.create({ identifier: email, password })
       if (result.status === 'complete') {
+        setIsBootstrappingSession(true)
         await setActive({ session: result.createdSessionId })
+        return
       }
+      setError('Sign in could not be completed. Please try again.')
     } catch (err: unknown) {
       const clerkErr = err as { errors?: Array<{ longMessage?: string; message?: string }> }
       setError(clerkErr.errors?.[0]?.longMessage ?? clerkErr.errors?.[0]?.message ?? 'Sign in failed.')
@@ -51,17 +110,8 @@ const LoginPage = () => {
       return
     }
 
-    try {
-      const user = await getMe()
-      dispatch(setUser(user))
-      if (user.role === 'admin') navigate('/admin')
-      else if (user.role === 'clan_leader') navigate(user.password_reset_required ? '/reset-password' : '/clan-leader/dashboard')
-      else navigate('/complete-profile')
-    } catch {
-      setError('Unable to load your account. Please try again.')
-    } finally {
-      setIsSubmitting(false)
-    }
+    setIsSubmitting(false)
+    setIsBootstrappingSession(false)
   }
 
   return (
@@ -69,10 +119,16 @@ const LoginPage = () => {
       {/* ── Left decorative panel ── */}
       <div
         className="hidden lg:flex flex-col w-[42%] relative overflow-hidden"
-        style={{ background: 'linear-gradient(155deg, #141414 0%, #1c1406 55%, #111 100%)' }}
+        style={{
+          backgroundImage: "url('https://res.cloudinary.com/df3lhzzy7/image/upload/v1775388692/sign_in_pages_bg_uahfmz.jpg')",
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+        }}
       >
-        <div className="h-[2px] bg-gradient-to-r from-transparent via-primary to-transparent" />
-        <div className="flex flex-col flex-1 p-12 pt-14">
+        {/* Dark overlay */}
+        <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/60 to-black/80" aria-hidden="true" />
+        <div className="relative z-10 h-[2px] bg-gradient-to-r from-transparent via-primary to-transparent" />
+        <div className="relative z-10 flex flex-col flex-1 p-12 pt-14">
           <KinfolkWordmark uppercase className="font-merriweather font-bold text-2xl tracking-[0.15em] text-white" />
           <p className="text-[9px] font-merriweather tracking-[0.35em] text-primary/70 uppercase mt-1">
             Preserve Your Roots
@@ -106,7 +162,7 @@ const LoginPage = () => {
             <circle cx="245" cy="160" r="5" fill="#CDB53F"/>
           </svg>
         </div>
-        <p className="p-12 pt-0 text-white/20 text-[10px] font-merriweather tracking-widest uppercase">
+        <p className="relative z-10 p-12 pt-0 text-white/20 text-[10px] font-merriweather tracking-widest uppercase">
           © {new Date().getFullYear()} Kinfolk
         </p>
       </div>
@@ -124,9 +180,9 @@ const LoginPage = () => {
 
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
             <Input label="Email Address" name="email" type="email" value={email}
-              onChange={(e) => setEmail(e.target.value)} required placeholder="you@example.com" />
+              onChange={(e) => setEmail(e.target.value)} required placeholder="you@example.com" disabled={isSubmitting || isBootstrappingSession} />
             <Input label="Password" name="password" type="password" value={password}
-              onChange={(e) => setPassword(e.target.value)} required placeholder="••••••••" />
+              onChange={(e) => setPassword(e.target.value)} required placeholder="••••••••" disabled={isSubmitting || isBootstrappingSession} />
 
             {error && (
               <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-red-600 text-sm font-merriweather flex items-center gap-2">
@@ -134,8 +190,8 @@ const LoginPage = () => {
               </div>
             )}
 
-            <Button type="submit" variant="primary" isLoading={isSubmitting}
-              disabled={isSubmitting} className="w-full rounded-full py-3 mt-1">
+            <Button type="submit" variant="primary" isLoading={isSubmitting || isBootstrappingSession}
+              disabled={isSubmitting || isBootstrappingSession} className="w-full rounded-full py-3 mt-1">
               Sign In
             </Button>
           </form>

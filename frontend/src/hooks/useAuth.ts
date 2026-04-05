@@ -2,7 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useDispatch } from 'react-redux'
 import { useClerk } from '@clerk/clerk-react'
 import { useNavigate } from 'react-router-dom'
-import toast from 'react-hot-toast'
+import notify from '@/utils/toast'
 import type { AppDispatch } from '@/store'
 import { setUser, clearUser } from '@/store/slices/authSlice'
 import { getMe, updateMe, completeProfile, deleteMe } from '@/api/users'
@@ -29,22 +29,31 @@ export const useUpdateMe = () => {
   return useMutation({
     mutationFn: updateMe,
     onSuccess: () => {
-      toast.success('Profile updated successfully')
+      notify.success('Profile updated successfully.')
       void queryClient.invalidateQueries({ queryKey: ['me'] })
     },
     onError: () => {
-      toast.error('Failed to update profile. Please try again.')
+      notify.error('Failed to update profile. Please try again.')
     },
   })
 }
 
 export const useCompleteProfile = () => {
+  const dispatch = useDispatch<AppDispatch>()
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: completeProfile,
-    onSuccess: () => {
-      toast.success('Profile completed!')
+    onSuccess: async () => {
+      const user = await queryClient.fetchQuery({
+        queryKey: ['me'],
+        queryFn: getMe,
+      })
+      dispatch(setUser(user))
+      notify.success('Profile saved — welcome to Kinfolk.')
       void queryClient.invalidateQueries({ queryKey: ['me'] })
+    },
+    onError: () => {
+      notify.error('Failed to save your profile. Please try again.')
     },
   })
 }
@@ -57,12 +66,12 @@ export const useDeleteMe = () => {
     mutationFn: deleteMe,
     onSuccess: async () => {
       dispatch(clearUser())
-      toast.success('Your account has been deleted.')
+      notify.success('Your account has been deleted.')
       await signOut()
       navigate('/')
     },
     onError: () => {
-      toast.error('Failed to delete account. Please try again.')
+      notify.error('Failed to delete account. Please try again.')
     },
   })
 }

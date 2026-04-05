@@ -42,17 +42,7 @@ class ErrorBoundary extends React.Component<
 function App() {
   return (
     <ErrorBoundary>
-      <Toaster
-        position="top-right"
-        toastOptions={{
-          style: {
-            fontFamily: 'Merriweather, serif',
-            borderRadius: '8px',
-          },
-          success: { iconTheme: { primary: '#CDB53F', secondary: '#fff' } },
-          error: { iconTheme: { primary: '#A0522D', secondary: '#fff' } },
-        }}
-      />
+      <Toaster position="top-right" />
       <RouterProvider router={router} />
     </ErrorBoundary>
   )

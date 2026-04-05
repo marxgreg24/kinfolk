@@ -2,6 +2,7 @@ import apiClient from './axios'
 import type { User } from '@/types/user'
 import type { AuditLog } from '@/types/auditLog'
 import type { InterestForm } from '@/types/interestForm'
+import type { Clan } from '@/types/clan'
 
 export const listUsers = async (params?: {
   role?: string
@@ -18,9 +19,9 @@ export const createClanLeader = async (data: {
   full_name: string
   email: string
   phone: string
-}): Promise<User> => {
+}): Promise<{ user: User; temp_password: string }> => {
   const res = await apiClient.post('/api/v1/admin/clan-leaders', data)
-  return (res.data as { data: User }).data
+  return (res.data as { data: { user: User; temp_password: string } }).data
 }
 
 export const suspendUser = async (id: string, suspend: boolean): Promise<void> => {
@@ -59,6 +60,11 @@ export const updateInterestFormStatus = async (
   status: 'approved' | 'rejected',
 ): Promise<void> => {
   await apiClient.patch(`/api/v1/admin/interest-forms/${id}`, { status })
+}
+
+export const listAdminClans = async (): Promise<Clan[]> => {
+  const res = await apiClient.get('/api/v1/admin/clans')
+  return (res.data as { data: Clan[] | null }).data ?? []
 }
 
 export const getApiHealth = async (): Promise<{ service: string; status: string }> => {

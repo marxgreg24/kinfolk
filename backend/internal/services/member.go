@@ -48,7 +48,11 @@ func (s *MemberService) AddMember(
 	}
 
 	if memberEmail != nil && *memberEmail != "" {
-		if err := s.email.SendClanInvitation(ctx, *memberEmail, fullName, clanID); err != nil {
+		clanName := clanID // fallback to ID if lookup fails
+		if clan, err := s.clanRepo.GetClanByID(ctx, clanID); err == nil && clan != nil {
+			clanName = clan.Name
+		}
+		if err := s.email.SendClanInvitation(ctx, *memberEmail, fullName, clanName); err != nil {
 			// Log but do not fail — email delivery is best-effort.
 			_ = s.audit.Log(ctx, leaderClerkID, "member_invitation_email_failed", "member", member.ID,
 				map[string]interface{}{"error": err.Error()})

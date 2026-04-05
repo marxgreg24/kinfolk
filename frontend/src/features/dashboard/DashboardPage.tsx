@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useSelector } from 'react-redux'
 import { useNavigate } from 'react-router-dom'
 import { useClerk } from '@clerk/clerk-react'
-import toast from 'react-hot-toast'
+import notify from '@/utils/toast'
 import type { RootState } from '@/store'
 import { useGetMe, useUpdateMe, useDeleteMe } from '@/hooks/useAuth'
 import { useGetClan, useExportGEDCOM } from '@/hooks/useClan'
@@ -68,7 +68,7 @@ const DashboardPage = () => {
     {
       icon: <DownloadIcon />, label: 'Export GEDCOM', desc: 'Download genealogy file',
       onClick: () => {
-        if (!user?.clan_id) { toast.error('You must be part of a clan to export.'); return }
+        if (!user?.clan_id) { notify.error('You must be part of a clan to export.'); return }
         exportGEDCOM.mutate(user.clan_id)
       },
       isPending: exportGEDCOM.isPending,
@@ -83,7 +83,7 @@ const DashboardPage = () => {
 
           {/* Header */}
           <div className="mb-7">
-            <p className="text-xs font-merriweather tracking-[0.25em] text-secondary uppercase mb-1">Member Dashboard</p>
+
             <h1 className="text-2xl font-bold text-gray-900 font-merriweather">
               Welcome back, <span className="text-primary">{user.full_name.split(' ')[0]}</span>
             </h1>

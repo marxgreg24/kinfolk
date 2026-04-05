@@ -3,10 +3,14 @@ package handlers
 
 import (
 	"net/http"
+	"strings"
 	"time"
 
+	"github.com/clerk/clerk-sdk-go/v2"
+	clerkuser "github.com/clerk/clerk-sdk-go/v2/user"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	"github.com/kinfolk/backend/internal/config"
 	"github.com/kinfolk/backend/internal/models"
 	"github.com/kinfolk/backend/internal/repository"
 	"github.com/kinfolk/backend/internal/services"
@@ -19,6 +23,7 @@ type AdminHandler struct {
 	userSvc          *services.UserService
 	emailSvc         *services.EmailService
 	auditSvc         *services.AuditService
+	cfg              *config.Config
 }
 
 func NewAdminHandler(
@@ -27,6 +32,7 @@ func NewAdminHandler(
 	userSvc *services.UserService,
 	emailSvc *services.EmailService,
 	auditSvc *services.AuditService,
+	cfg *config.Config,
 ) *AdminHandler {
 	return &AdminHandler{
 		userRepo:         userRepo,
@@ -34,6 +40,7 @@ func NewAdminHandler(
 		userSvc:          userSvc,
 		emailSvc:         emailSvc,
 		auditSvc:         auditSvc,
+		cfg:              cfg,
 	}
 }
 
@@ -73,22 +80,50 @@ func (h *AdminHandler) CreateClanLeader(c *gin.Context) {
 		return
 	}
 
+	tempPassword := h.cfg.TempClanLeaderPassword
+
+	// Split full name into first / last for Clerk.
+	firstName, lastName := splitName(body.FullName)
+
+	// Create the actual Clerk account so the user can sign in immediately.
+	clerk.SetKey(h.cfg.ClerkSecretKey)
+	skipChecks := true
+	emails := []string{body.Email}
+	clerkCreated, err := clerkuser.Create(c.Request.Context(), &clerkuser.CreateParams{
+		EmailAddresses:     &emails,
+		Password:           &tempPassword,
+		FirstName:          &firstName,
+		LastName:           &lastName,
+		SkipPasswordChecks: &skipChecks,
+	})
+	if err != nil {
+		errorResponse(c, http.StatusInternalServerError, "Failed to create Clerk account: "+err.Error())
+		return
+	}
+
 	user := &models.User{
-		ID:          uuid.New().String(),
-		ClerkUserID: "pending-" + uuid.New().String(),
-		FullName:    body.FullName,
-		Email:       body.Email,
-		Role:        "clan_leader",
+		ID:                    uuid.New().String(),
+		ClerkUserID:           clerkCreated.ID,
+		FullName:              body.FullName,
+		Email:                 body.Email,
+		Role:                  "clan_leader",
+		PasswordResetRequired: true,
 	}
 
 	if err := h.userRepo.CreateUser(c.Request.Context(), user); err != nil {
+		// Best-effort: delete the Clerk user to avoid an orphaned account.
+		_, _ = clerkuser.Delete(c.Request.Context(), clerkCreated.ID)
 		errorResponse(c, http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	_ = h.emailSvc.SendWelcomeClanLeader(c.Request.Context(), body.Email, body.FullName, "")
+	_ = h.emailSvc.SendWelcomeClanLeader(c.Request.Context(), body.Email, body.FullName, tempPassword)
 
-	createdResponse(c, user)
+	// Return the temp password so the admin can share it if needed.
+	c.JSON(http.StatusCreated, gin.H{
+		"user":          user,
+		"temp_password": tempPassword,
+	})
 }
 
 // SuspendUser toggles the suspended flag on a user account.
@@ -183,14 +218,38 @@ func (h *AdminHandler) UpdateInterestFormStatus(c *gin.Context) {
 		return
 	}
 
-	if err := h.interestFormRepo.UpdateInterestFormStatus(
-		c.Request.Context(),
-		c.Param("id"),
-		body.Status,
-	); err != nil {
+	ctx := c.Request.Context()
+	id := c.Param("id")
+
+	// Fetch form before updating so we can email the submitter on approval.
+	form, err := h.interestFormRepo.GetInterestForm(ctx, id)
+	if err != nil {
+		errorResponse(c, http.StatusNotFound, "interest form not found")
+		return
+	}
+
+	if err := h.interestFormRepo.UpdateInterestFormStatus(ctx, id, body.Status); err != nil {
 		errorResponse(c, http.StatusInternalServerError, err.Error())
 		return
 	}
 
+	// Send approval email only when transitioning to approved.
+	if body.Status == "approved" && form.Status != "approved" {
+		if emailErr := h.emailSvc.SendInterestFormApproved(ctx, form.Email, form.FullName, form.ClanName); emailErr != nil {
+			// Log but don't fail the request — the status was already updated.
+			c.Header("X-Email-Warning", "approval email could not be sent")
+		}
+	}
+
 	c.Status(http.StatusNoContent)
+}
+
+// splitName splits "First Last Name" into first name and everything else as last name.
+// If there is only one word it becomes the first name with an empty last name.
+func splitName(full string) (string, string) {
+	parts := strings.SplitN(strings.TrimSpace(full), " ", 2)
+	if len(parts) == 1 {
+		return parts[0], ""
+	}
+	return parts[0], parts[1]
 }

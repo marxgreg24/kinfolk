@@ -102,6 +102,15 @@ func (s *ClanService) CreateClanByLeaderID(ctx context.Context, leaderUserID, cl
 	return clan, nil
 }
 
+// ListAll returns all clans ordered by name.
+func (s *ClanService) ListAll(ctx context.Context) ([]*models.Clan, error) {
+	clans, err := s.repo.ListClans(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("services.ClanService.ListAll: %w", err)
+	}
+	return clans, nil
+}
+
 // GetClanByID returns a single clan by its UUID.
 func (s *ClanService) GetClanByID(ctx context.Context, id string) (*models.Clan, error) {
 	clan, err := s.repo.GetClanByID(ctx, id)

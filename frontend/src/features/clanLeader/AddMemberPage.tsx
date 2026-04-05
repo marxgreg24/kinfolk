@@ -1,8 +1,10 @@
 import { useState, useRef } from 'react'
-import { useSelector } from 'react-redux'
-import toast from 'react-hot-toast'
-import type { RootState } from '@/store'
-import { useAddMember } from '@/hooks/useClanLeader'
+import { useSelector, useDispatch } from 'react-redux'
+import notify from '@/utils/toast'
+import type { RootState, AppDispatch } from '@/store'
+import { setUser } from '@/store/slices/authSlice'
+import type { User } from '@/types/user'
+import { useAddMember, useCreateClan } from '@/hooks/useClanLeader'
 import { useGetClanMembers } from '@/hooks/useClan'
 import { RELATIONSHIP_TYPES } from '@/utils/relationships'
 import Sidebar from '@/components/layout/Sidebar'
@@ -11,13 +13,13 @@ import Input from '@/components/ui/Input'
 import Button from '@/components/ui/Button'
 import Avatar from '@/components/ui/Avatar'
 import Badge from '@/components/ui/Badge'
+import apiClient from '@/api/axios'
 
-const CLOUDINARY_CLOUD = 'kinfolk'
-const CLOUDINARY_PRESET = 'kinfolk_unsigned'
 const EMPTY_FORM = { full_name: '', email: '', relationship_to_leader: '' }
 
 const AddMemberPage = () => {
   const user = useSelector((s: RootState) => s.auth.user)
+  const dispatch = useDispatch<AppDispatch>()
   const { mutate: addMember, isPending } = useAddMember(user?.clan_id ?? '')
   const { data: clanMembersData, isLoading: membersLoading } = useGetClanMembers(user?.clan_id ?? '')
   const members = clanMembersData?.members ?? []
@@ -26,6 +28,14 @@ const AddMemberPage = () => {
   const [profilePictureUrl, setProfilePictureUrl] = useState('')
   const [isUploading, setIsUploading] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  // Create clan state
+  const [clanName, setClanName] = useState('')
+  const refreshUser = async () => {
+    const res = await apiClient.get('/api/v1/users/me')
+    dispatch(setUser((res.data as { data: User }).data))
+  }
+  const { mutate: createClan, isPending: isCreating } = useCreateClan(refreshUser)
 
   if (!user) return <Spinner fullScreen />
 
@@ -38,11 +48,12 @@ const AddMemberPage = () => {
     setIsUploading(true)
     try {
       const fd = new FormData()
-      fd.append('file', file); fd.append('upload_preset', CLOUDINARY_PRESET)
-      const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD}/image/upload`, { method: 'POST', body: fd })
-      if (!res.ok) throw new Error('Upload failed')
-      setProfilePictureUrl(((await res.json()) as { secure_url: string }).secure_url)
-    } catch { toast.error('Photo upload failed. Please try again.') }
+      fd.append('file', file)
+      const res = await apiClient.post<{ url: string }>('/api/v1/upload/photo', fd, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      })
+      setProfilePictureUrl(res.data.url)
+    } catch { notify.error('Photo upload failed. Please try again.') }
     finally { setIsUploading(false) }
   }
 
@@ -72,17 +83,40 @@ const AddMemberPage = () => {
           </div>
 
           {!user.clan_id && (
-            <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 mb-6 flex items-center gap-3">
-              <div className="w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center flex-shrink-0">
-                <svg viewBox="0 0 24 24" fill="none" stroke="#D97706" strokeWidth={2} className="w-4 h-4">
-                  <path d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" strokeLinecap="round" strokeLinejoin="round"/>
+            <div className="flex flex-col items-center justify-center py-20 gap-6">
+              <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
+                <svg viewBox="0 0 24 24" fill="none" stroke="#CDB53F" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" className="w-8 h-8">
+                  <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>
                 </svg>
               </div>
-              <p className="text-sm text-amber-800 font-merriweather">You must create a clan before adding members.</p>
+              <div className="text-center max-w-sm">
+                <h2 className="font-merriweather font-bold text-gray-800 text-xl mb-2">Create your clan first</h2>
+                <p className="font-merriweather text-gray-400 text-sm leading-relaxed">
+                  Give your clan a name to get started. You'll be able to add members, build your family tree, and more.
+                </p>
+              </div>
+              <div className="w-full max-w-sm flex flex-col gap-3">
+                <Input
+                  label="Clan Name"
+                  required
+                  value={clanName}
+                  onChange={(e) => setClanName(e.target.value)}
+                  placeholder="e.g. The Nakato Family"
+                />
+                <Button
+                  variant="primary"
+                  isLoading={isCreating}
+                  disabled={isCreating || !clanName.trim()}
+                  className="rounded-full py-3"
+                  onClick={() => createClan(clanName.trim())}
+                >
+                  Create Clan
+                </Button>
+              </div>
             </div>
           )}
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className={`grid grid-cols-1 lg:grid-cols-2 gap-6 ${!user.clan_id ? 'hidden' : ''}`}>
             {/* Form card */}
             <div className="bg-white border border-gray-100 rounded-2xl shadow-sm overflow-hidden">
               <div className="h-[2px] bg-gradient-to-r from-transparent via-primary/30 to-transparent" />

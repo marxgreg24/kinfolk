@@ -5,12 +5,67 @@ package services
 import (
 	"context"
 	"fmt"
+	"time"
 
-	resend "github.com/resend/resend-go/v2"
 	"github.com/kinfolk/backend/internal/config"
+	resend "github.com/resend/resend-go/v2"
 )
 
 const fromAddress = "Kinfolk <no-reply@kinfolkapp.me>"
+
+// emailShell wraps body content in the shared Kinfolk email layout.
+// title is the pre-header / hero title shown at the top of the content area.
+func emailShell(title, body string) string {
+	year := time.Now().Year()
+	return fmt.Sprintf(`<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>%s</title>
+</head>
+<body style="margin:0;padding:0;background:#f5f4f0;font-family:Georgia,'Times New Roman',serif;">
+  <table width="100%%" cellpadding="0" cellspacing="0" style="background:#f5f4f0;padding:32px 16px;">
+    <tr><td align="center">
+      <table width="100%%" cellpadding="0" cellspacing="0" style="max-width:580px;">
+
+        <!-- Header bar -->
+        <tr>
+          <td style="background:#111111;border-radius:12px 12px 0 0;overflow:hidden;">
+            <div style="height:3px;background:linear-gradient(90deg,transparent,#CDB53F,transparent);"></div>
+            <div style="padding:24px 36px 20px;text-align:center;">
+              <span style="font-family:Georgia,serif;font-size:22px;font-weight:bold;letter-spacing:6px;color:#ffffff;text-transform:uppercase;text-decoration:none;">KINFOLK</span>
+              <div style="font-family:Georgia,serif;font-size:9px;letter-spacing:5px;color:#CDB53F;text-transform:uppercase;margin-top:4px;opacity:0.8;">Preserve Your Roots</div>
+            </div>
+          </td>
+        </tr>
+
+        <!-- Content card -->
+        <tr>
+          <td style="background:#ffffff;padding:36px 40px 32px;border-left:1px solid #e8e4dc;border-right:1px solid #e8e4dc;">
+            %s
+          </td>
+        </tr>
+
+        <!-- Footer -->
+        <tr>
+          <td style="background:#111111;border-radius:0 0 12px 12px;padding:20px 36px;text-align:center;">
+            <div style="height:1px;background:linear-gradient(90deg,transparent,rgba(205,181,63,0.3),transparent);margin-bottom:16px;"></div>
+            <p style="margin:0 0 6px;font-family:Georgia,serif;font-size:11px;color:rgba(255,255,255,0.35);letter-spacing:3px;text-transform:uppercase;">© %d Kinfolk</p>
+            <p style="margin:0;font-family:Georgia,serif;font-size:11px;">
+              <a href="mailto:info@kinfolkapp.me" style="color:#CDB53F;text-decoration:none;">info@kinfolkapp.me</a>
+              <span style="color:rgba(255,255,255,0.2);margin:0 8px;">·</span>
+              <a href="https://kinfolkapp.me" style="color:rgba(255,255,255,0.35);text-decoration:none;">kinfolkapp.me</a>
+            </p>
+          </td>
+        </tr>
+
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`, title, body, year)
+}
 
 type EmailService struct {
 	client *resend.Client
@@ -26,20 +81,50 @@ func newEmailService(cfg *config.Config) *EmailService {
 
 // SendWelcomeClanLeader sends login credentials to a newly created clan leader.
 func (s *EmailService) SendWelcomeClanLeader(ctx context.Context, toEmail, fullName, tempPassword string) error {
-	html := fmt.Sprintf(`<!DOCTYPE html>
-<html>
-<body style="font-family:sans-serif;max-width:600px;margin:auto;padding:24px;">
-  <h2 style="color:#CDB53F;">Welcome to Kinfolk, %s!</h2>
-  <p>You have been set up as a <strong>Clan Leader</strong> on Kinfolk — the platform for building and preserving your family's legacy.</p>
-  <p>Your login credentials are below. Please log in and reset your password immediately.</p>
-  <table style="border-collapse:collapse;margin:16px 0;">
-    <tr><td style="padding:4px 12px 4px 0;color:#555;">Email</td><td style="padding:4px 0;"><strong>%s</strong></td></tr>
-    <tr><td style="padding:4px 12px 4px 0;color:#555;">Temporary Password</td><td style="padding:4px 0;"><strong>%s</strong></td></tr>
-  </table>
-  <p><a href="https://kinfolkapp.me" style="background:#CDB53F;color:#fff;padding:10px 20px;border-radius:4px;text-decoration:none;display:inline-block;">Log in to Kinfolk</a></p>
-  <p style="color:#888;font-size:12px;margin-top:32px;">If you did not expect this email, please contact us at info@kinfolkapp.me.</p>
-</body>
-</html>`, fullName, toEmail, tempPassword)
+	body := fmt.Sprintf(`
+    <p style="margin:0 0 6px;font-family:Georgia,serif;font-size:12px;letter-spacing:3px;color:#A0522D;text-transform:uppercase;">Welcome</p>
+    <h1 style="margin:0 0 20px;font-family:Georgia,serif;font-size:24px;font-weight:bold;color:#111111;line-height:1.3;">You are now a Clan Leader on Kinfolk</h1>
+    <div style="width:40px;height:2px;background:#CDB53F;margin-bottom:24px;"></div>
+
+    <p style="font-family:Georgia,serif;font-size:15px;color:#444444;line-height:1.7;margin:0 0 16px;">
+      Hi <strong>%s</strong>,
+    </p>
+    <p style="font-family:Georgia,serif;font-size:15px;color:#444444;line-height:1.7;margin:0 0 24px;">
+      Your Clan Leader account has been set up on Kinfolk — the platform for building and preserving your family&rsquo;s legacy across generations.
+    </p>
+
+    <!-- Credentials block -->
+    <table cellpadding="0" cellspacing="0" width="100%%" style="background:#faf9f6;border:1px solid #e8e4dc;border-radius:8px;margin-bottom:28px;">
+      <tr><td style="padding:20px 24px;">
+        <p style="margin:0 0 14px;font-family:Georgia,serif;font-size:11px;letter-spacing:3px;text-transform:uppercase;color:#A0522D;">Your Login Credentials</p>
+        <table cellpadding="0" cellspacing="0">
+          <tr>
+            <td style="font-family:Georgia,serif;font-size:13px;color:#888;padding:5px 20px 5px 0;white-space:nowrap;">Email address</td>
+            <td style="font-family:Georgia,serif;font-size:14px;color:#111;font-weight:bold;">%s</td>
+          </tr>
+          <tr>
+            <td style="font-family:Georgia,serif;font-size:13px;color:#888;padding:5px 20px 5px 0;white-space:nowrap;">Temporary password</td>
+            <td style="font-family:Georgia,serif;font-size:14px;color:#111;font-weight:bold;letter-spacing:1px;">%s</td>
+          </tr>
+        </table>
+      </td></tr>
+    </table>
+
+    <p style="font-family:Georgia,serif;font-size:14px;color:#666;line-height:1.6;margin:0 0 28px;">
+      Please sign in and <strong style="color:#A0522D;">reset your password immediately</strong> before inviting your clan members.
+    </p>
+
+    <table cellpadding="0" cellspacing="0"><tr><td>
+      <a href="https://kinfolkapp.me/login" style="display:inline-block;background:#CDB53F;color:#ffffff;font-family:Georgia,serif;font-size:14px;font-weight:bold;text-decoration:none;padding:14px 32px;border-radius:50px;letter-spacing:1px;">
+        Sign In to Kinfolk &rarr;
+      </a>
+    </td></tr></table>
+
+    <p style="font-family:Georgia,serif;font-size:12px;color:#aaa;margin-top:32px;line-height:1.6;">
+      If you did not expect this account, contact us immediately at <a href="mailto:info@kinfolkapp.me" style="color:#A0522D;">info@kinfolkapp.me</a>.
+    </p>`, fullName, toEmail, tempPassword)
+
+	html := emailShell("Welcome to Kinfolk — Clan Leader Account", body)
 
 	params := &resend.SendEmailRequest{
 		From:    fromAddress,
@@ -55,17 +140,37 @@ func (s *EmailService) SendWelcomeClanLeader(ctx context.Context, toEmail, fullN
 
 // SendClanInvitation notifies a member that they have been added to a clan.
 func (s *EmailService) SendClanInvitation(ctx context.Context, toEmail, memberName, clanName string) error {
-	html := fmt.Sprintf(`<!DOCTYPE html>
-<html>
-<body style="font-family:sans-serif;max-width:600px;margin:auto;padding:24px;">
-  <h2 style="color:#CDB53F;">You have been added to the %s clan!</h2>
-  <p>Hi %s,</p>
-  <p>A member of the <strong>%s</strong> clan on Kinfolk has added you to their family tree.</p>
-  <p>Sign up at <a href="https://kinfolkapp.me">kinfolkapp.me</a> using the email address this message was sent to, and you will be automatically connected to your clan.</p>
-  <p><a href="https://kinfolkapp.me" style="background:#CDB53F;color:#fff;padding:10px 20px;border-radius:4px;text-decoration:none;display:inline-block;">Join Kinfolk</a></p>
-  <p style="color:#888;font-size:12px;margin-top:32px;">If you believe this was sent in error, you can safely ignore this email.</p>
-</body>
-</html>`, clanName, memberName, clanName)
+	body := fmt.Sprintf(`
+    <p style="margin:0 0 6px;font-family:Georgia,serif;font-size:12px;letter-spacing:3px;color:#A0522D;text-transform:uppercase;">Clan Invitation</p>
+    <h1 style="margin:0 0 20px;font-family:Georgia,serif;font-size:24px;font-weight:bold;color:#111111;line-height:1.3;">You have been added to the %s clan</h1>
+    <div style="width:40px;height:2px;background:#CDB53F;margin-bottom:24px;"></div>
+
+    <p style="font-family:Georgia,serif;font-size:15px;color:#444444;line-height:1.7;margin:0 0 16px;">
+      Hi <strong>%s</strong>,
+    </p>
+    <p style="font-family:Georgia,serif;font-size:15px;color:#444444;line-height:1.7;margin:0 0 24px;">
+      A member of the <strong>%s</strong> clan has added you to their family tree on Kinfolk. Sign up using this email address and you will be automatically connected to your clan.
+    </p>
+
+    <!-- Clan highlight -->
+    <table cellpadding="0" cellspacing="0" width="100%%" style="background:#faf9f6;border:1px solid #e8e4dc;border-left:4px solid #CDB53F;border-radius:0 8px 8px 0;margin-bottom:28px;">
+      <tr><td style="padding:16px 20px;">
+        <p style="margin:0 0 4px;font-family:Georgia,serif;font-size:11px;letter-spacing:3px;text-transform:uppercase;color:#A0522D;">Clan</p>
+        <p style="margin:0;font-family:Georgia,serif;font-size:18px;font-weight:bold;color:#111111;">%s</p>
+      </td></tr>
+    </table>
+
+    <table cellpadding="0" cellspacing="0"><tr><td>
+      <a href="https://kinfolkapp.me/signup" style="display:inline-block;background:#CDB53F;color:#ffffff;font-family:Georgia,serif;font-size:14px;font-weight:bold;text-decoration:none;padding:14px 32px;border-radius:50px;letter-spacing:1px;">
+        Join Kinfolk &rarr;
+      </a>
+    </td></tr></table>
+
+    <p style="font-family:Georgia,serif;font-size:12px;color:#aaa;margin-top:32px;line-height:1.6;">
+      If you believe this was sent in error, you can safely ignore this email.
+    </p>`, clanName, memberName, clanName, clanName)
+
+	html := emailShell("You have been added to a clan on Kinfolk", body)
 
 	params := &resend.SendEmailRequest{
 		From:    fromAddress,
@@ -75,6 +180,81 @@ func (s *EmailService) SendClanInvitation(ctx context.Context, toEmail, memberNa
 	}
 	if _, err := s.client.Emails.Send(params); err != nil {
 		return fmt.Errorf("services.EmailService.SendClanInvitation: %w", err)
+	}
+	return nil
+}
+
+// SendInterestFormApproved notifies the submitter that their clan registration interest has been approved.
+func (s *EmailService) SendInterestFormApproved(ctx context.Context, toEmail, fullName, clanName string) error {
+	body := fmt.Sprintf(`
+    <p style="margin:0 0 6px;font-family:Georgia,serif;font-size:12px;letter-spacing:3px;color:#A0522D;text-transform:uppercase;">Great News</p>
+    <h1 style="margin:0 0 20px;font-family:Georgia,serif;font-size:24px;font-weight:bold;color:#111111;line-height:1.3;">Your clan interest has been approved</h1>
+    <div style="width:40px;height:2px;background:#CDB53F;margin-bottom:24px;"></div>
+
+    <p style="font-family:Georgia,serif;font-size:15px;color:#444444;line-height:1.7;margin:0 0 16px;">
+      Hi <strong>%s</strong>,
+    </p>
+    <p style="font-family:Georgia,serif;font-size:15px;color:#444444;line-height:1.7;margin:0 0 24px;">
+      Your interest in registering the <strong>%s</strong> clan on Kinfolk has been reviewed and approved by our team.
+    </p>
+
+    <!-- Approved clan block -->
+    <table cellpadding="0" cellspacing="0" width="100%%" style="background:#faf9f6;border:1px solid #e8e4dc;border-left:4px solid #CDB53F;border-radius:0 8px 8px 0;margin-bottom:28px;">
+      <tr><td style="padding:16px 20px;">
+        <p style="margin:0 0 4px;font-family:Georgia,serif;font-size:11px;letter-spacing:3px;text-transform:uppercase;color:#A0522D;">Approved Clan</p>
+        <p style="margin:0;font-family:Georgia,serif;font-size:18px;font-weight:bold;color:#111111;">%s</p>
+      </td></tr>
+    </table>
+
+    <!-- What happens next -->
+    <p style="margin:0 0 14px;font-family:Georgia,serif;font-size:11px;letter-spacing:3px;text-transform:uppercase;color:#888888;">What happens next</p>
+    <table cellpadding="0" cellspacing="0" width="100%%" style="margin-bottom:28px;">
+      <tr>
+        <td style="vertical-align:top;padding:0 16px 14px 0;white-space:nowrap;">
+          <span style="display:inline-block;width:24px;height:24px;background:#CDB53F;border-radius:50%%;text-align:center;line-height:24px;font-family:Georgia,serif;font-size:11px;font-weight:bold;color:#fff;">1</span>
+        </td>
+        <td style="font-family:Georgia,serif;font-size:14px;color:#555;line-height:1.6;padding-bottom:14px;">
+          Our team will create your <strong>Clan Leader account</strong> and send your login credentials to this email address.
+        </td>
+      </tr>
+      <tr>
+        <td style="vertical-align:top;padding:0 16px 14px 0;white-space:nowrap;">
+          <span style="display:inline-block;width:24px;height:24px;background:#CDB53F;border-radius:50%%;text-align:center;line-height:24px;font-family:Georgia,serif;font-size:11px;font-weight:bold;color:#fff;">2</span>
+        </td>
+        <td style="font-family:Georgia,serif;font-size:14px;color:#555;line-height:1.6;padding-bottom:14px;">
+          Sign in, reset your password, and start <strong>building your family tree</strong>.
+        </td>
+      </tr>
+      <tr>
+        <td style="vertical-align:top;padding:0 16px 0 0;white-space:nowrap;">
+          <span style="display:inline-block;width:24px;height:24px;background:#CDB53F;border-radius:50%%;text-align:center;line-height:24px;font-family:Georgia,serif;font-size:11px;font-weight:bold;color:#fff;">3</span>
+        </td>
+        <td style="font-family:Georgia,serif;font-size:14px;color:#555;line-height:1.6;">
+          Invite clan members to join and <strong>preserve your heritage</strong> for generations to come.
+        </td>
+      </tr>
+    </table>
+
+    <table cellpadding="0" cellspacing="0"><tr><td>
+      <a href="https://kinfolkapp.me" style="display:inline-block;background:#CDB53F;color:#ffffff;font-family:Georgia,serif;font-size:14px;font-weight:bold;text-decoration:none;padding:14px 32px;border-radius:50px;letter-spacing:1px;">
+        Explore Kinfolk &rarr;
+      </a>
+    </td></tr></table>
+
+    <p style="font-family:Georgia,serif;font-size:12px;color:#aaa;margin-top:32px;line-height:1.6;">
+      Questions? Reply to this email or reach us at <a href="mailto:info@kinfolkapp.me" style="color:#A0522D;">info@kinfolkapp.me</a>.
+    </p>`, fullName, clanName, clanName)
+
+	html := emailShell("Your Kinfolk clan interest has been approved", body)
+
+	params := &resend.SendEmailRequest{
+		From:    fromAddress,
+		To:      []string{toEmail},
+		Subject: "Your Kinfolk clan interest has been approved — " + clanName,
+		Html:    html,
+	}
+	if _, err := s.client.Emails.Send(params); err != nil {
+		return fmt.Errorf("services.EmailService.SendInterestFormApproved: %w", err)
 	}
 	return nil
 }

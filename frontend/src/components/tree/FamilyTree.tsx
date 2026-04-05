@@ -4,7 +4,6 @@ import { useSelector } from 'react-redux'
 import type { RootState } from '@/store/index'
 import { useGetClanTree } from '@/hooks/useClan'
 import Spinner from '@/components/ui/Spinner'
-import Navbar from '@/components/layout/Navbar'
 import Sidebar from '@/components/layout/Sidebar'
 import type { Member } from '@/types/member'
 import type { Relationship } from '@/types/relationship'
@@ -247,12 +246,11 @@ const FamilyTree = () => {
       <Sidebar role={user.role} />
 
       <div className="flex-1 flex flex-col ml-64">
-        <Navbar />
 
         <div
           ref={containerRef}
           className="relative w-full overflow-hidden bg-gray-50"
-          style={{ height: 'calc(100vh - 64px)' }}
+          style={{ height: 'calc(100vh)' }}
         >
           {isLoading && (
             <div className="absolute inset-0 flex items-center justify-center">

@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useSelector } from 'react-redux'
 import type { RootState } from '@/store'
-import { useListUsers, useCreateClanLeader } from '@/hooks/useAdmin'
+import { useListUsers, useCreateClanLeader, useListAdminClans } from '@/hooks/useAdmin'
 import Sidebar from '@/components/layout/Sidebar'
 import { SkeletonTableRows } from '@/components/ui/Skeleton'
 import Input from '@/components/ui/Input'
@@ -15,6 +15,8 @@ const AdminClanLeaders = () => {
   const user = useSelector((s: RootState) => s.auth.user)
   const createMutation = useCreateClanLeader()
   const { data: clanLeaders, isLoading } = useListUsers({ role: 'clan_leader' })
+  const { data: clans } = useListAdminClans()
+  const clanNameById = Object.fromEntries((clans ?? []).map((c) => [c.id, c.name]))
   const [form, setForm] = useState(EMPTY_FORM)
 
   if (!user) return <></>
@@ -102,8 +104,8 @@ const AdminClanLeaders = () => {
                         </div>
                       </td>
                       <td className="py-3.5 px-5 text-sm text-gray-500 font-merriweather">{l.email}</td>
-                      <td className="py-3.5 px-5 text-xs text-gray-400 font-merriweather font-mono">
-                        {l.clan_id ? `${l.clan_id.slice(0, 8)}…` : '—'}
+                      <td className="py-3.5 px-5 text-sm text-gray-600 font-merriweather">
+                        {l.clan_id ? (clanNameById[l.clan_id] ?? `${l.clan_id.slice(0, 8)}…`) : '—'}
                       </td>
                       <td className="py-3.5 px-5">
                         <Badge status={l.is_suspended ? 'suspended' : 'active'} label={l.is_suspended ? 'Suspended' : 'Active'} />

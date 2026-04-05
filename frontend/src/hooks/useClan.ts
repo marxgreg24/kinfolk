@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { saveAs } from 'file-saver'
-import toast from 'react-hot-toast'
+import notify from '@/utils/toast'
 import {
   getClan,
   getClanMembers,
@@ -43,10 +43,10 @@ export const useExportGEDCOM = () =>
     mutationFn: exportClanGEDCOM,
     onSuccess: (blob) => {
       saveAs(blob, 'clan_family_tree.ged')
-      toast.success('Family tree exported successfully.')
+      notify.success('Family tree exported successfully.')
     },
     onError: () => {
-      toast.error('Failed to export family tree. Please try again.')
+      notify.error('Failed to export family tree. Please try again.')
     },
   })
 
@@ -56,10 +56,10 @@ export const useCreateClan = () => {
     mutationFn: createClan,
     onSuccess: (clan) => {
       void queryClient.invalidateQueries({ queryKey: ['clan'] })
-      toast.success(`Clan "${clan.name}" created successfully.`)
+      notify.success(`Clan "${clan.name}" created successfully.`)
     },
     onError: () => {
-      toast.error('Failed to create clan. Please try again.')
+      notify.error('Failed to create clan. Please try again.')
     },
   })
 }

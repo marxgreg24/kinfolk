@@ -18,7 +18,10 @@ type UserService struct {
 }
 
 // SyncUser upserts a user record on Clerk sign-in. Idempotent.
+// If an admin pre-created the account (e.g. a clan leader with a pending clerk_user_id),
+// the existing row is claimed by updating its clerk_user_id instead of inserting a duplicate.
 func (s *UserService) SyncUser(ctx context.Context, clerkUserID, email, fullName, clanID string) (*models.User, error) {
+	// 1. Happy path — user already fully synced.
 	existing, err := s.repo.GetUserByClerkID(ctx, clerkUserID)
 	if err != nil {
 		return nil, fmt.Errorf("services.UserService.SyncUser: %w", err)
@@ -27,6 +30,20 @@ func (s *UserService) SyncUser(ctx context.Context, clerkUserID, email, fullName
 		return existing, nil
 	}
 
+	// 2. Admin may have pre-created the account (clan leader). Claim it.
+	byEmail, err := s.repo.GetUserByEmail(ctx, email)
+	if err != nil {
+		return nil, fmt.Errorf("services.UserService.SyncUser: %w", err)
+	}
+	if byEmail != nil {
+		if err := s.repo.UpdateClerkID(ctx, byEmail.ID, clerkUserID); err != nil {
+			return nil, fmt.Errorf("services.UserService.SyncUser: %w", err)
+		}
+		byEmail.ClerkUserID = clerkUserID
+		return byEmail, nil
+	}
+
+	// 3. Brand-new user — create a fresh record.
 	user := &models.User{
 		ID:          uuid.New().String(),
 		ClerkUserID: clerkUserID,
@@ -88,6 +105,21 @@ func (s *UserService) UpdateProfile(ctx context.Context, clerkUserID, fullName, 
 
 	if err := s.repo.UpdateUser(ctx, user); err != nil {
 		return fmt.Errorf("services.UserService.UpdateProfile: %w", err)
+	}
+	return nil
+}
+
+// ClearPasswordReset clears the password_reset_required flag after a user sets their own password.
+func (s *UserService) ClearPasswordReset(ctx context.Context, clerkUserID string) error {
+	user, err := s.repo.GetUserByClerkID(ctx, clerkUserID)
+	if err != nil {
+		return fmt.Errorf("services.UserService.ClearPasswordReset: %w", err)
+	}
+	if user == nil {
+		return fmt.Errorf("services.UserService.ClearPasswordReset: user not found")
+	}
+	if err := s.repo.SetPasswordResetRequired(ctx, user.ID, false); err != nil {
+		return fmt.Errorf("services.UserService.ClearPasswordReset: %w", err)
 	}
 	return nil
 }

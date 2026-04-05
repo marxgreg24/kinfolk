@@ -3,7 +3,6 @@ import { Link } from 'react-router-dom'
 import LandingHeader from '@/components/layout/LandingHeader'
 import Footer from '@/components/layout/Footer'
 import InterestFormModal from './InterestFormModal'
-import HeroTreeCard from './HeroTreeCard'
 
 // ── Data ─────────────────────────────────────────────────────────────────────
 
@@ -134,75 +133,102 @@ const LandingPage = () => {
     <div className="min-h-screen flex flex-col">
       <LandingHeader onRegisterInterest={() => setIsInterestModalOpen(true)} />
 
-      {/* SECTION 1 — Hero (untouched) */}
+      {/* SECTION 1 — Hero */}
       <section
         id="hero"
-        className="w-full bg-white pt-16 pb-0 overflow-hidden"
-        style={{
-          background:
-            'radial-gradient(ellipse 70% 60% at 70% 50%, rgba(205,181,63,0.07) 0%, transparent 70%), #ffffff',
-        }}
+        className="relative w-full min-h-[75vh] sm:min-h-screen flex flex-col overflow-hidden"
       >
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col lg:flex-row items-center gap-12 lg:gap-16 py-20 lg:py-28">
-            <div className="flex-1 flex flex-col items-center lg:items-start text-center lg:text-left">
-              <div className="inline-flex items-center gap-2 bg-primary/10 border border-primary/20 rounded-full px-4 py-1.5 mb-6">
-                <span className="w-2 h-2 rounded-full bg-primary animate-pulse flex-shrink-0" />
-                <span className="text-sm font-merriweather font-medium text-secondary tracking-wide">
-                  Trusted by Ugandan Families
-                </span>
+        {/* Background image */}
+        <div
+          className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+          style={{ backgroundImage: "url('https://res.cloudinary.com/df3lhzzy7/image/upload/v1775387495/kinfolk_background_image_rcjrzv.jpg')" }}
+          aria-hidden="true"
+        />
+        {/* Dark overlay — top-to-bottom gradient for depth */}
+        <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/50 to-black/80" aria-hidden="true" />
+        {/* Subtle gold centre glow */}
+        <div
+          className="absolute inset-0 pointer-events-none"
+          style={{ background: 'radial-gradient(ellipse 70% 55% at 50% 62%, rgba(205,181,63,0.10) 0%, transparent 70%)' }}
+          aria-hidden="true"
+        />
+
+        {/* Main content — vertically centred */}
+        <div className="relative z-10 flex-1 flex flex-col items-center justify-center text-center w-full max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 pt-20 pb-10 sm:py-36">
+
+          {/* Trust badge */}
+          <div className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-sm border border-white/20 rounded-full px-4 py-1.5 mb-8">
+            <span className="w-2 h-2 rounded-full bg-primary animate-pulse flex-shrink-0" />
+            <span className="text-sm font-merriweather font-medium text-white/90 tracking-wide">
+              Trusted by Ugandan Families
+            </span>
+          </div>
+
+          {/* Headline */}
+          <h1 className="font-merriweather font-bold text-white leading-tight text-4xl sm:text-5xl lg:text-6xl xl:text-[3.75rem] max-w-3xl">
+            Preserve Your{' '}
+            <span className="relative inline-block">
+              <span className="relative z-10 text-primary">Roots.</span>
+              <span className="absolute bottom-0.5 left-0 right-0 h-[3px] rounded-full bg-primary/40" aria-hidden="true" />
+            </span>
+            <br className="hidden sm:block" />
+            {' '}Reconnect With{' '}
+            <span className="text-primary/90">Your Clan.</span>
+          </h1>
+
+          {/* Gold divider */}
+          <div className="w-16 h-[3px] rounded-full bg-primary mt-7 mb-7" />
+
+          {/* Subtext */}
+          <p className="text-white/70 text-lg leading-relaxed font-merriweather max-w-xl mx-auto">
+            Kinfolk helps Ugandan families build, explore, and share their clan
+            genealogies — for generations to come.
+          </p>
+
+          {/* CTA buttons */}
+          <div className="flex flex-col sm:flex-row gap-4 mt-10 justify-center items-center">
+            <Link to="/signup">
+              <span className="inline-flex items-center gap-2 bg-primary hover:bg-yellow-500 text-white font-merriweather font-medium text-base px-7 py-3.5 rounded-full transition-all duration-200 shadow-lg shadow-primary/25">
+                Join Your Clan
+                <svg width="14" height="14" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+                  <path d="M2 6h8M7 3l3 3-3 3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </span>
+            </Link>
+            <button
+              onClick={() => setIsInterestModalOpen(true)}
+              className="inline-flex items-center font-merriweather font-medium text-base px-7 py-3.5 rounded-full border-2 border-white/40 text-white hover:bg-white/10 hover:border-white/60 backdrop-blur-sm transition-all duration-200"
+            >
+              Register Your Clan&apos;s Interest
+            </button>
+          </div>
+
+          {/* Stats row */}
+          <div className="hidden sm:flex flex-wrap items-center justify-center gap-8 sm:gap-12 mt-12">
+            {stats.map((s, i) => (
+              <div key={s.label} className="flex items-center gap-8 sm:gap-12">
+                <div className="text-center">
+                  <p className="font-merriweather font-bold text-3xl sm:text-4xl text-white">{s.value}</p>
+                  <p className="text-xs text-white/50 font-merriweather uppercase tracking-widest mt-1">{s.label}</p>
+                </div>
+                {i < stats.length - 1 && <div className="h-10 w-px bg-white/15 hidden sm:block" />}
               </div>
-              <h1 className="font-merriweather font-bold text-gray-900 leading-tight text-4xl sm:text-5xl lg:text-[3.25rem]">
-                Preserve Your{' '}
-                <span className="relative inline-block">
-                  <span className="relative z-10 text-primary">Roots.</span>
-                  <span className="absolute bottom-0 left-0 right-0 h-[3px] rounded-full bg-primary/30" aria-hidden="true" />
-                </span>
-                <br className="hidden sm:block" />
-                {' '}Reconnect With{' '}
-                <span className="text-secondary">Your Clan.</span>
-              </h1>
-              <div className="bg-primary h-1 w-16 rounded-full mt-6 mb-6 lg:mx-0 mx-auto" />
-              <p className="text-gray-500 text-lg leading-relaxed font-merriweather max-w-xl">
-                Kinfolk helps Ugandan families build, explore, and share their clan
-                genealogies — for generations to come.
-              </p>
-              <div className="flex flex-wrap gap-4 mt-10 justify-center lg:justify-start">
-                <Link to="/signup">
-                  <span className="inline-flex items-center gap-2 bg-primary hover:bg-yellow-500 text-white font-merriweather font-medium text-base px-7 py-3.5 rounded-full transition-colors duration-200 shadow-sm">
-                    Join Your Clan
-                    <svg width="14" height="14" viewBox="0 0 12 12" fill="none" aria-hidden="true">
-                      <path d="M2 6h8M7 3l3 3-3 3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
-                  </span>
-                </Link>
-                <button
-                  onClick={() => setIsInterestModalOpen(true)}
-                  className="inline-flex items-center font-merriweather font-medium text-base px-7 py-3.5 rounded-full border-2 border-secondary text-secondary hover:bg-secondary hover:text-white transition-colors duration-200"
-                >
-                  Register Your Clan&apos;s Interest
-                </button>
-              </div>
-              <div className="flex flex-wrap items-center gap-6 mt-10 justify-center lg:justify-start">
-                {stats.map((s, i) => (
-                  <div key={s.label} className="flex items-center gap-6">
-                    <div className="text-center lg:text-left">
-                      <p className="font-merriweather font-bold text-2xl text-gray-900">{s.value}</p>
-                      <p className="text-xs text-gray-500 font-merriweather uppercase tracking-widest mt-0.5">{s.label}</p>
-                    </div>
-                    {i < stats.length - 1 && <div className="h-8 w-px bg-gray-200 hidden sm:block" />}
-                  </div>
-                ))}
-              </div>
-            </div>
-            <div className="hidden md:flex flex-1 justify-center lg:justify-end w-full lg:w-auto">
-              <HeroTreeCard />
-            </div>
+            ))}
           </div>
         </div>
-        <div className="w-full overflow-hidden leading-none" aria-hidden="true">
-          <svg viewBox="0 0 1440 48" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none" className="w-full h-10 sm:h-12">
-            <path d="M0,24 C360,48 1080,0 1440,24 L1440,48 L0,48 Z" fill="#f9fafb" />
+
+        {/* Scroll indicator */}
+        <div className="relative z-10 hidden sm:flex flex-col items-center pb-10 gap-1.5" aria-hidden="true">
+          <span className="text-white/30 text-[10px] font-merriweather tracking-[0.25em] uppercase">Scroll</span>
+          <svg viewBox="0 0 24 24" fill="none" className="w-4 h-4 text-white/30 animate-bounce" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
+            <path d="M19 9l-7 7-7-7" />
+          </svg>
+        </div>
+
+        {/* Wave transition into next section */}
+        <div className="absolute bottom-0 left-0 right-0" aria-hidden="true">
+          <svg viewBox="0 0 1440 56" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none" className="w-full h-10 sm:h-14 block">
+            <path d="M0,28 C360,56 1080,0 1440,28 L1440,56 L0,56 Z" fill="#f9fafb" />
           </svg>
         </div>
       </section>

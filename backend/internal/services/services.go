@@ -79,6 +79,7 @@ func NewServices(
 		},
 		MemberLink: &MemberLinkService{
 			memberRepo: memberRepo,
+			clanRepo:   clanRepo,
 			matchRepo:  matchRepo,
 			audit:      audit,
 		},

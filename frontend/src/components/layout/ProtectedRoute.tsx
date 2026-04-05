@@ -4,6 +4,7 @@ import { useAuth } from '@clerk/clerk-react'
 import { useSelector } from 'react-redux'
 import type { RootState } from '@/store'
 import Spinner from '@/components/ui/Spinner'
+import { isProfileComplete } from '@/utils/profile'
 
 const ProtectedRoute = ({ children }: { children: ReactNode }) => {
   const { isSignedIn, isLoaded } = useAuth()
@@ -14,13 +15,7 @@ const ProtectedRoute = ({ children }: { children: ReactNode }) => {
 
   if (!isSignedIn) return <Navigate to="/login" replace />
 
-  if (
-    user &&
-    user.birth_year == null &&
-    user.gender == null &&
-    user.phone == null &&
-    location.pathname !== '/complete-profile'
-  ) {
+  if (user && !isProfileComplete(user) && location.pathname !== '/complete-profile') {
     return <Navigate to="/complete-profile" replace />
   }
 

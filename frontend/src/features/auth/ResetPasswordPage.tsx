@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useUser } from '@clerk/clerk-react'
+import { useAuth } from '@clerk/clerk-react'
 import { useDispatch, useSelector } from 'react-redux'
-import toast from 'react-hot-toast'
+import notify from '@/utils/toast'
 import type { RootState, AppDispatch } from '@/store'
 import { setUser } from '@/store/slices/authSlice'
 import type { User } from '@/types/user'
@@ -13,7 +13,7 @@ import KinfolkWordmark from '@/components/ui/KinfolkWordmark'
 
 const ResetPasswordPage = () => {
   const navigate = useNavigate()
-  const { user: clerkUser, isLoaded } = useUser()
+  const { isLoaded } = useAuth()
   const dispatch = useDispatch<AppDispatch>()
   const reduxUser = useSelector((state: RootState) => state.auth.user)
 
@@ -24,25 +24,29 @@ const ResetPasswordPage = () => {
 
   useEffect(() => {
     if (!isLoaded) return
-    if (!reduxUser || reduxUser.role !== 'clan_leader') navigate('/dashboard')
+    // Redirect if not a clan leader or doesn't need a reset
+    if (!reduxUser) return
+    if (reduxUser.role !== 'clan_leader' || !reduxUser.password_reset_required) {
+      navigate(reduxUser.role === 'clan_leader' ? '/clan-leader/dashboard' : '/dashboard', { replace: true })
+    }
   }, [isLoaded, reduxUser, navigate])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!clerkUser) return
     if (newPassword !== confirmPassword) { setError('Passwords do not match'); return }
     if (newPassword.length < 8) { setError('Password must be at least 8 characters'); return }
 
     setIsSubmitting(true); setError('')
     try {
-      await clerkUser.updatePassword({ newPassword, signOutOfOtherSessions: true })
+      // Use backend Admin API — bypasses Clerk session-elevation requirements.
+      await apiClient.post('/api/v1/users/me/set-password', { new_password: newPassword })
       const meRes = await apiClient.get('/api/v1/users/me')
       dispatch(setUser((meRes.data as { data: User }).data))
-      toast.success('Password updated successfully')
+      notify.success('Password updated successfully.')
       navigate('/clan-leader/dashboard')
     } catch (err: unknown) {
-      const clerkErr = err as { errors?: Array<{ longMessage?: string; message?: string }> }
-      setError(clerkErr.errors?.[0]?.longMessage ?? clerkErr.errors?.[0]?.message ?? 'Failed to update password.')
+      const axiosErr = err as { response?: { data?: { error?: string } }; message?: string }
+      setError(axiosErr.response?.data?.error ?? axiosErr.message ?? 'Failed to update password.')
     } finally {
       setIsSubmitting(false)
     }

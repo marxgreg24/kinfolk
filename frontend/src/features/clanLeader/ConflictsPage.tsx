@@ -28,15 +28,19 @@ const ConflictsPage = () => {
           </div>
 
           {/* Empty state */}
-          {conflicts?.length === 0 && (
-            <div className="bg-white border border-gray-100 rounded-2xl p-16 text-center shadow-sm">
-              <div className="w-14 h-14 rounded-2xl bg-emerald-50 flex items-center justify-center mx-auto mb-4">
-                <svg viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round" className="w-7 h-7">
+          {!conflicts?.length && (
+            <div className="flex flex-col items-center justify-center py-32 gap-5">
+              <div className="w-16 h-16 rounded-full bg-emerald-50 flex items-center justify-center">
+                <svg viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" className="w-8 h-8">
                   <path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>
                 </svg>
               </div>
-              <h3 className="font-merriweather font-bold text-gray-900 mb-1">No conflicts</h3>
-              <p className="text-gray-400 text-sm font-merriweather">All relationship submissions are consistent.</p>
+              <div className="text-center max-w-xs">
+                <h3 className="font-merriweather font-bold text-gray-800 text-xl mb-2">All clear</h3>
+                <p className="font-merriweather text-gray-400 text-sm leading-relaxed">
+                  There are no conflicting relationship submissions from your clan members right now.
+                </p>
+              </div>
             </div>
           )}
 

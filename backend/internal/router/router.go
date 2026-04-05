@@ -16,6 +16,7 @@ import (
 type Handlers struct {
 	Auth            *handlers.AuthHandler
 	User            *handlers.UserHandler
+	Upload          *handlers.UploadHandler
 	Clan            *handlers.ClanHandler
 	Member          *handlers.MemberHandler
 	Relationship    *handlers.RelationshipHandler
@@ -33,6 +34,7 @@ func SetupRouter(h *Handlers, cfg *config.Config, db *sqlx.DB) *gin.Engine {
 	r.Use(gin.Recovery())
 	r.Use(middleware.Logger())
 	r.Use(middleware.CORS(cfg))
+	r.Static("/uploads", "./uploads")
 
 	r.GET("/health", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{
@@ -56,6 +58,9 @@ func SetupRouter(h *Handlers, cfg *config.Config, db *sqlx.DB) *gin.Engine {
 	protected.PUT("users/me", h.User.UpdateMe)
 	protected.DELETE("users/me", h.User.DeleteMe)
 	protected.POST("users/me/profile", h.User.CompleteProfile)
+	protected.POST("users/me/set-password", h.User.SetPassword)
+	protected.POST("users/me/clear-password-reset", h.User.ClearPasswordReset)
+	protected.POST("upload/photo", h.Upload.UploadPhoto)
 
 	protected.GET("clans/:id", h.Clan.GetByID)
 	protected.GET("clans/:id/members", h.Clan.GetMembers)
@@ -86,6 +91,7 @@ func SetupRouter(h *Handlers, cfg *config.Config, db *sqlx.DB) *gin.Engine {
 	admin.Use(middleware.RequireRole(db, "admin"))
 
 	admin.GET("/users", h.Admin.ListUsers)
+	admin.GET("/clans", h.Clan.ListAll)
 	admin.POST("/clans", h.Clan.CreateForAdmin)
 	admin.POST("/clan-leaders", h.Admin.CreateClanLeader)
 	admin.PATCH("/users/:id/suspend", h.Admin.SuspendUser)

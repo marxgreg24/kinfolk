@@ -65,14 +65,15 @@ func main() {
 	// ── Handlers ─────────────────────────────────────────────────────────────
 	h := &router.Handlers{
 		Auth:            handlers.NewAuthHandler(svcs.User, svcs.MemberLink, userRepo),
-		User:            handlers.NewUserHandler(svcs.User),
+		User:            handlers.NewUserHandler(svcs.User, svcs.MemberLink, cfg),
+		Upload:          handlers.NewUploadHandler(cfg),
 		Clan:            handlers.NewClanHandler(svcs.Clan),
 		Member:          handlers.NewMemberHandler(svcs.Member),
 		Relationship:    handlers.NewRelationshipHandler(svcs.Relationship, memberRepo),
 		Conflict:        handlers.NewConflictHandler(svcs.Conflict, svcs.User),
-		Admin:           handlers.NewAdminHandler(userRepo, interestFormRepo, svcs.User, svcs.Email, svcs.Audit),
+		Admin:           handlers.NewAdminHandler(userRepo, interestFormRepo, svcs.User, svcs.Email, svcs.Audit, cfg),
 		InterestForm:    handlers.NewInterestFormHandler(interestFormRepo),
-		Chat:            handlers.NewChatHandler(cfg, svcs.User),
+		Chat:            handlers.NewChatHandler(cfg, svcs.User, userRepo),
 		Export:          handlers.NewExportHandler(svcs.Gedcom),
 		MatchSuggestion: handlers.NewMatchSuggestionHandler(matchRepo, svcs.MemberLink, svcs.Audit, userRepo),
 	}

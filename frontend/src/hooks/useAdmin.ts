@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import toast from 'react-hot-toast'
+import notify from '@/utils/toast'
 import {
   listUsers,
   createClanLeader,
@@ -8,6 +8,7 @@ import {
   listAuditLogs,
   listInterestForms,
   updateInterestFormStatus,
+  listAdminClans,
   getApiHealth,
 } from '@/api/admin'
 
@@ -22,15 +23,16 @@ export const useCreateClanLeader = () => {
   return useMutation({
     mutationFn: (data: { full_name: string; email: string; phone: string }) =>
       createClanLeader(data),
-    onSuccess: (user) => {
-      toast.success(
-        `Clan leader account created for ${user.full_name}. A welcome email has been sent with their temporary password.`,
-      )
+    onSuccess: ({ user, temp_password }) => {
+      notify.success(`Clan leader account created for ${user.full_name}`, {
+        detail: `Temporary password: ${temp_password}  ·  A welcome email has been sent.`,
+        duration: 12000,
+      })
       void queryClient.invalidateQueries({ queryKey: ['admin-users'] })
     },
     onError: (error: any) => {
       const message = error?.response?.data?.error ?? 'Failed to create clan leader. Please try again.'
-      toast.error(message)
+      notify.error(message)
     },
   })
 }
@@ -42,12 +44,12 @@ export const useSuspendUser = () => {
       suspendUser(id, suspend),
     onSuccess: (_data, variables) => {
       const action = variables.suspend ? 'suspended' : 'reactivated'
-      toast.success(`User account ${action} successfully.`)
+      notify.success(`User account ${action} successfully.`)
       void queryClient.invalidateQueries({ queryKey: ['admin-users'] })
     },
     onError: (error: any) => {
       const message = error?.response?.data?.error ?? 'Failed to update user status. Please try again.'
-      toast.error(message)
+      notify.error(message)
     },
   })
 }
@@ -57,12 +59,12 @@ export const useDeleteUser = () => {
   return useMutation({
     mutationFn: (id: string) => deleteUser(id),
     onSuccess: () => {
-      toast.success('User account deleted successfully.')
+      notify.success('User account deleted successfully.')
       void queryClient.invalidateQueries({ queryKey: ['admin-users'] })
     },
     onError: (error: any) => {
       const message = error?.response?.data?.error ?? 'Failed to delete user. Please try again.'
-      toast.error(message)
+      notify.error(message)
     },
   })
 }
@@ -92,16 +94,22 @@ export const useUpdateInterestFormStatus = () => {
       updateInterestFormStatus(id, status),
     onSuccess: (_, variables) => {
       const action = variables.status === 'approved' ? 'approved' : 'rejected'
-      const hint = variables.status === 'approved' ? ' You can now create a clan leader for this clan.' : ''
-      toast.success(`Interest form ${action}.${hint}`)
+      const detail = variables.status === 'approved' ? 'You can now create a clan leader for this clan.' : undefined
+      notify.success(`Interest form ${action}.`, { detail })
       void queryClient.invalidateQueries({ queryKey: ['interest-forms'] })
     },
     onError: (error: any) => {
       const message = error?.response?.data?.error ?? 'Failed to update form status. Please try again.'
-      toast.error(message)
+      notify.error(message)
     },
   })
 }
+
+export const useListAdminClans = () =>
+  useQuery({
+    queryKey: ['admin-clans'],
+    queryFn: listAdminClans,
+  })
 
 export const useApiHealth = () =>
   useQuery({
