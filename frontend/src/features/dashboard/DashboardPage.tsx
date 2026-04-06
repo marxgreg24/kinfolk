@@ -1,10 +1,10 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useSelector } from 'react-redux'
 import { useNavigate } from 'react-router-dom'
 import { useClerk } from '@clerk/clerk-react'
 import notify from '@/utils/toast'
 import type { RootState } from '@/store'
-import { useGetMe, useUpdateMe, useDeleteMe } from '@/hooks/useAuth'
+import { useGetMe, useUpdateMe, useDeleteMe, useCompleteProfile } from '@/hooks/useAuth'
 import { useGetClan, useExportGEDCOM } from '@/hooks/useClan'
 import Sidebar from '@/components/layout/Sidebar'
 import Spinner from '@/components/ui/Spinner'
@@ -13,6 +13,7 @@ import Badge from '@/components/ui/Badge'
 import Button from '@/components/ui/Button'
 import Modal from '@/components/ui/Modal'
 import Input from '@/components/ui/Input'
+import apiClient from '@/api/axios'
 
 // ── Icons ─────────────────────────────────────────────────────────────────────
 const TreeIcon = () => (
@@ -51,6 +52,25 @@ const DashboardPage = () => {
   const [editName, setEditName] = useState('')
   const [editPhone, setEditPhone] = useState('')
 
+  // ── Profile completion modal (shown once on first login if incomplete) ─────
+  const [welcomeOpen, setWelcomeOpen] = useState(false)
+  const [wcBirthYear, setWcBirthYear] = useState('')
+  const [wcGender, setWcGender] = useState('')
+  const [wcPhone, setWcPhone] = useState('')
+  const [wcUploading, setWcUploading] = useState(false)
+  const [wcPicUrl, setWcPicUrl] = useState('')
+  const wcFileRef = useRef<HTMLInputElement>(null)
+  const completeProfile = useCompleteProfile()
+  const shownWelcomeKey = `kf_welcome_shown_${user?.id ?? ''}`
+
+  useEffect(() => {
+    if (!user) return
+    const incomplete = !user.birth_year || !user.gender || !user.phone
+    if (!incomplete || sessionStorage.getItem(shownWelcomeKey)) return
+    sessionStorage.setItem(shownWelcomeKey, '1')
+    setWelcomeOpen(true)
+  }, [user?.id, shownWelcomeKey])
+
   const updateMe = useUpdateMe()
   const deleteMe = useDeleteMe()
   const exportGEDCOM = useExportGEDCOM()
@@ -58,8 +78,8 @@ const DashboardPage = () => {
 
   if (!user) return <Spinner fullScreen />
 
-  const openEdit = () => { setEditName(user.full_name); setEditPhone(user.phone ?? ''); setEditOpen(true) }
   const profileIncomplete = !user.birth_year || !user.gender || !user.phone
+  const openEdit = () => { setEditName(user.full_name); setEditPhone(user.phone ?? ''); setEditOpen(true) }
 
   const quickActions = [
     { icon: <TreeIcon />, label: 'Family Tree', desc: 'View your clan tree', onClick: () => navigate('/clan/tree'), isPending: false },
@@ -182,6 +202,119 @@ const DashboardPage = () => {
                 Delete Account
               </Button>
             </div>
+          </Modal>
+
+          {/* Profile Completion Welcome Modal */}
+          <Modal isOpen={welcomeOpen} onClose={() => setWelcomeOpen(false)} title="Complete Your Profile" size="md">
+            <p className="text-sm text-gray-500 font-merriweather mb-5 leading-relaxed">
+              Your clan leader added you — help us personalise your experience by filling in a few details.
+            </p>
+            <form
+              onSubmit={(e) => {
+                e.preventDefault()
+                completeProfile.mutate(
+                  {
+                    birth_year: parseInt(wcBirthYear, 10),
+                    gender: wcGender,
+                    phone: wcPhone,
+                    profile_picture_url: wcPicUrl,
+                  },
+                  { onSuccess: () => setWelcomeOpen(false) },
+                )
+              }}
+              className="flex flex-col gap-4"
+            >
+              <Input
+                label="Birth Year"
+                name="birth_year"
+                type="number"
+                placeholder={`e.g. ${new Date().getFullYear() - 30}`}
+                value={wcBirthYear}
+                onChange={(e) => setWcBirthYear(e.target.value)}
+                required
+              />
+              <div>
+                <label className="text-xs font-merriweather font-semibold uppercase tracking-wider text-gray-500 mb-1.5 block">
+                  Gender <span className="text-primary">*</span>
+                </label>
+                <select
+                  value={wcGender}
+                  onChange={(e) => setWcGender(e.target.value)}
+                  required
+                  className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm font-merriweather text-gray-900 bg-white hover:border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary/25 focus:border-primary transition-all duration-200"
+                >
+                  <option value="">Select gender…</option>
+                  <option value="male">Male</option>
+                  <option value="female">Female</option>
+                </select>
+              </div>
+              <Input
+                label="Phone Number"
+                name="phone"
+                type="tel"
+                placeholder="+256 700 000 000"
+                value={wcPhone}
+                onChange={(e) => setWcPhone(e.target.value)}
+                required
+              />
+              {/* Photo upload */}
+              <div>
+                <label className="text-xs font-merriweather font-semibold uppercase tracking-wider text-gray-500 mb-1.5 block">
+                  Profile Photo <span className="text-gray-300 normal-case tracking-normal font-normal">(optional)</span>
+                </label>
+                <input
+                  ref={wcFileRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={async (e) => {
+                    const file = e.target.files?.[0]
+                    if (!file) return
+                    setWcUploading(true)
+                    try {
+                      const fd = new FormData()
+                      fd.append('file', file)
+                      const res = await apiClient.post<{ url: string }>('/api/v1/upload/photo', fd, {
+                        headers: { 'Content-Type': 'multipart/form-data' },
+                      })
+                      setWcPicUrl(res.data.url)
+                    } catch { notify.error('Photo upload failed.') }
+                    finally { setWcUploading(false) }
+                  }}
+                />
+                {wcPicUrl ? (
+                  <div className="flex items-center gap-3 p-3 border border-gray-100 rounded-xl">
+                    <Avatar src={wcPicUrl} name={user.full_name} size="sm" />
+                    <div className="flex-1">
+                      <p className="text-xs font-merriweather text-gray-600">Photo uploaded</p>
+                      <button type="button" onClick={() => setWcPicUrl('')}
+                        className="text-xs text-red-400 hover:text-red-600 transition-colors font-merriweather">Remove</button>
+                    </div>
+                  </div>
+                ) : (
+                  <button type="button" onClick={() => wcFileRef.current?.click()}
+                    className="w-full border-2 border-dashed border-gray-200 hover:border-primary rounded-xl p-4 text-center transition-colors group">
+                    <p className="text-sm text-gray-400 font-merriweather group-hover:text-primary transition-colors">
+                      {wcUploading ? 'Uploading…' : '+ Upload photo'}
+                    </p>
+                  </button>
+                )}
+              </div>
+              <div className="flex gap-3 justify-end mt-2">
+                <Button type="button" variant="outline" size="sm" onClick={() => setWelcomeOpen(false)}>
+                  Skip for now
+                </Button>
+                <Button
+                  type="submit"
+                  variant="primary"
+                  size="sm"
+                  isLoading={completeProfile.isPending}
+                  disabled={!wcBirthYear || !wcGender || !wcPhone || completeProfile.isPending}
+                >
+                  Save Details
+                </Button>
+              </div>
+            </form>
           </Modal>
         </main>
       </div>

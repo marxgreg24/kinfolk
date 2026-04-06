@@ -3,6 +3,9 @@ import { Link } from 'react-router-dom'
 import LandingHeader from '@/components/layout/LandingHeader'
 import Footer from '@/components/layout/Footer'
 import InterestFormModal from './InterestFormModal'
+import ClanInterestModal from './ClanInterestModal'
+import { useListPublicClans } from '@/hooks/useClan'
+import type { Clan } from '@/types/clan'
 
 // ── Data ─────────────────────────────────────────────────────────────────────
 
@@ -128,6 +131,8 @@ const SectionLabel = ({ children }: { children: React.ReactNode }) => (
 
 const LandingPage = () => {
   const [isInterestModalOpen, setIsInterestModalOpen] = useState(false)
+  const [selectedClan, setSelectedClan] = useState<Clan | null>(null)
+  const { data: publicClans = [], isLoading: clansLoading } = useListPublicClans()
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -272,6 +277,60 @@ const LandingPage = () => {
               </div>
             ))}
           </div>
+        </div>
+      </section>
+
+      {/* ── SECTION 2b — Clan Browser ────────────────────────────────────────── */}
+      <section id="clans" className="bg-white py-28 px-4 sm:px-6">
+        <div className="max-w-5xl mx-auto">
+          <SectionLabel>Active Clans</SectionLabel>
+          <h2 className="text-center font-merriweather font-bold text-3xl sm:text-4xl text-gray-900 mb-4">
+            Find your clan
+          </h2>
+          <p className="text-center text-gray-400 font-merriweather text-base max-w-md mx-auto mb-12">
+            Browse the clans already on Kinfolk. If you believe you belong to one, express your interest and the clan leader will be in touch.
+          </p>
+
+          {clansLoading && (
+            <div className="flex justify-center py-10">
+              <div className="w-8 h-8 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
+            </div>
+          )}
+
+          {!clansLoading && publicClans.length === 0 && (
+            <p className="text-center text-gray-400 font-merriweather text-sm py-10">
+              No clans have been set up yet — be the first to register your clan&apos;s interest.
+            </p>
+          )}
+
+          {!clansLoading && publicClans.length > 0 && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {publicClans.map((clan) => (
+                <div
+                  key={clan.id}
+                  className="group bg-white border border-gray-100 rounded-2xl p-6 hover:border-primary/30 hover:shadow-[0_8px_32px_rgba(205,181,63,0.10)] transition-all duration-300"
+                >
+                  {/* Clan initial avatar */}
+                  <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mb-4">
+                    <span className="font-merriweather font-bold text-primary text-lg">
+                      {clan.name.charAt(0).toUpperCase()}
+                    </span>
+                  </div>
+                  <p className="font-merriweather font-bold text-gray-900 text-base mb-1">{clan.name}</p>
+                  <p className="font-merriweather text-xs text-gray-400 mb-4 uppercase tracking-widest">Clan</p>
+                  <button
+                    onClick={() => setSelectedClan(clan)}
+                    className="inline-flex items-center gap-1.5 text-xs font-merriweather font-medium text-primary border border-primary/30 rounded-full px-4 py-1.5 hover:bg-primary/5 transition-colors"
+                  >
+                    Express Interest
+                    <svg width="10" height="10" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+                      <path d="M2 6h8M7 3l3 3-3 3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </section>
 
@@ -447,6 +506,13 @@ const LandingPage = () => {
         isOpen={isInterestModalOpen}
         onClose={() => setIsInterestModalOpen(false)}
       />
+
+      {selectedClan && (
+        <ClanInterestModal
+          clan={selectedClan}
+          onClose={() => setSelectedClan(null)}
+        />
+      )}
     </div>
   )
 }

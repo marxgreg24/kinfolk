@@ -14,18 +14,20 @@ import (
 
 // Handlers bundles all HTTP handler instances.
 type Handlers struct {
-	Auth            *handlers.AuthHandler
-	User            *handlers.UserHandler
-	Upload          *handlers.UploadHandler
-	Clan            *handlers.ClanHandler
-	Member          *handlers.MemberHandler
-	Relationship    *handlers.RelationshipHandler
-	Conflict        *handlers.ConflictHandler
-	Admin           *handlers.AdminHandler
-	InterestForm    *handlers.InterestFormHandler
-	Chat            *handlers.ChatHandler
-	Export          *handlers.ExportHandler
-	MatchSuggestion *handlers.MatchSuggestionHandler
+	Auth               *handlers.AuthHandler
+	User               *handlers.UserHandler
+	Upload             *handlers.UploadHandler
+	Clan               *handlers.ClanHandler
+	Member             *handlers.MemberHandler
+	Family             *handlers.FamilyHandler
+	Relationship       *handlers.RelationshipHandler
+	Conflict           *handlers.ConflictHandler
+	Admin              *handlers.AdminHandler
+	InterestForm       *handlers.InterestFormHandler
+	ClanMemberInterest *handlers.ClanMemberInterestHandler
+	Chat               *handlers.ChatHandler
+	Export             *handlers.ExportHandler
+	MatchSuggestion    *handlers.MatchSuggestionHandler
 }
 
 // SetupRouter creates the Gin engine with global middleware and all route groups.
@@ -46,8 +48,10 @@ func SetupRouter(h *Handlers, cfg *config.Config, db *sqlx.DB) *gin.Engine {
 	api := r.Group("/api/v1")
 
 	// ── Public routes ──────────────────────────────────────────────────────────
+	api.GET("/clans", h.Clan.ListPublic)
 	api.GET("/clans/validate", h.Clan.ValidateName)
 	api.POST("/interest-forms", h.InterestForm.Submit)
+	api.POST("/clan-member-interests", h.ClanMemberInterest.Submit)
 
 	// ── Protected routes (Clerk JWT required) ─────────────────────────────────
 	protected := api.Group("/")
@@ -64,6 +68,7 @@ func SetupRouter(h *Handlers, cfg *config.Config, db *sqlx.DB) *gin.Engine {
 
 	protected.GET("clans/:id", h.Clan.GetByID)
 	protected.GET("clans/:id/members", h.Clan.GetMembers)
+	protected.GET("families/:id/members", h.Family.ListFamilyMembers)
 
 	protected.POST("relationships", h.Relationship.Submit)
 	protected.GET("clans/:id/relationships", h.Relationship.ListByClan)
@@ -79,6 +84,10 @@ func SetupRouter(h *Handlers, cfg *config.Config, db *sqlx.DB) *gin.Engine {
 
 	leader.POST("/clans", h.Clan.Create)
 	leader.POST("/clans/:id/members", h.Member.AddMember)
+	leader.POST("/families", h.Family.CreateFamily)
+	leader.GET("/families", h.Family.ListFamilies)
+	leader.GET("/member-interests", h.ClanMemberInterest.List)
+	leader.POST("/member-interests/:id/archive", h.ClanMemberInterest.Archive)
 	leader.GET("/conflicts", h.Conflict.ListConflicts)
 	leader.POST("/conflicts/:id/resolve", h.Conflict.ResolveConflict)
 	leader.GET("/match-suggestions", h.MatchSuggestion.ListSuggestions)

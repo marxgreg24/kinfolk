@@ -184,6 +184,68 @@ func (s *EmailService) SendClanInvitation(ctx context.Context, toEmail, memberNa
 	return nil
 }
 
+// SendWelcomeGeneralUser sends login credentials to a newly created general user.
+func (s *EmailService) SendWelcomeGeneralUser(ctx context.Context, toEmail, fullName, clanName, tempPassword string) error {
+	body := fmt.Sprintf(`
+    <p style="margin:0 0 6px;font-family:Georgia,serif;font-size:12px;letter-spacing:3px;color:#A0522D;text-transform:uppercase;">Welcome to Kinfolk</p>
+    <h1 style="margin:0 0 20px;font-family:Georgia,serif;font-size:24px;font-weight:bold;color:#111111;line-height:1.3;">You have been added to the %s clan</h1>
+    <div style="width:40px;height:2px;background:#CDB53F;margin-bottom:24px;"></div>
+
+    <p style="font-family:Georgia,serif;font-size:15px;color:#444444;line-height:1.7;margin:0 0 16px;">
+      Hi <strong>%s</strong>,
+    </p>
+    <p style="font-family:Georgia,serif;font-size:15px;color:#444444;line-height:1.7;margin:0 0 24px;">
+      Your clan leader has added you to the <strong>%s</strong> clan on Kinfolk — the platform for building and preserving your family&rsquo;s legacy across generations.
+    </p>
+    <p style="font-family:Georgia,serif;font-size:15px;color:#444444;line-height:1.7;margin:0 0 24px;">
+      Your account is ready. Use the credentials below to sign in, then set a personal password to get started.
+    </p>
+
+    <!-- Credentials block -->
+    <table cellpadding="0" cellspacing="0" width="100%%" style="background:#faf9f6;border:1px solid #e8e4dc;border-radius:8px;margin-bottom:28px;">
+      <tr><td style="padding:20px 24px;">
+        <p style="margin:0 0 14px;font-family:Georgia,serif;font-size:11px;letter-spacing:3px;text-transform:uppercase;color:#A0522D;">Your Login Credentials</p>
+        <table cellpadding="0" cellspacing="0">
+          <tr>
+            <td style="font-family:Georgia,serif;font-size:13px;color:#888;padding:5px 20px 5px 0;white-space:nowrap;">Email address</td>
+            <td style="font-family:Georgia,serif;font-size:14px;color:#111;font-weight:bold;">%s</td>
+          </tr>
+          <tr>
+            <td style="font-family:Georgia,serif;font-size:13px;color:#888;padding:5px 20px 5px 0;white-space:nowrap;">Temporary password</td>
+            <td style="font-family:Georgia,serif;font-size:14px;color:#111;font-weight:bold;letter-spacing:1px;">%s</td>
+          </tr>
+        </table>
+      </td></tr>
+    </table>
+
+    <p style="font-family:Georgia,serif;font-size:14px;color:#666;line-height:1.6;margin:0 0 28px;">
+      Please sign in and <strong style="color:#A0522D;">set a personal password immediately</strong> to secure your account.
+    </p>
+
+    <table cellpadding="0" cellspacing="0"><tr><td>
+      <a href="https://kinfolkapp.me/login" style="display:inline-block;background:#CDB53F;color:#ffffff;font-family:Georgia,serif;font-size:14px;font-weight:bold;text-decoration:none;padding:14px 32px;border-radius:50px;letter-spacing:1px;">
+        Sign In to Kinfolk &rarr;
+      </a>
+    </td></tr></table>
+
+    <p style="font-family:Georgia,serif;font-size:12px;color:#aaa;margin-top:32px;line-height:1.6;">
+      If you did not expect this invitation, contact us at <a href="mailto:info@kinfolkapp.me" style="color:#A0522D;">info@kinfolkapp.me</a>.
+    </p>`, clanName, fullName, clanName, toEmail, tempPassword)
+
+	html := emailShell("Welcome to Kinfolk — "+clanName+" Clan", body)
+
+	params := &resend.SendEmailRequest{
+		From:    fromAddress,
+		To:      []string{toEmail},
+		Subject: "Welcome to Kinfolk — You have been added to the " + clanName + " clan",
+		Html:    html,
+	}
+	if _, err := s.client.Emails.Send(params); err != nil {
+		return fmt.Errorf("services.EmailService.SendWelcomeGeneralUser: %w", err)
+	}
+	return nil
+}
+
 // SendInterestFormApproved notifies the submitter that their clan registration interest has been approved.
 func (s *EmailService) SendInterestFormApproved(ctx context.Context, toEmail, fullName, clanName string) error {
 	body := fmt.Sprintf(`
@@ -255,6 +317,50 @@ func (s *EmailService) SendInterestFormApproved(ctx context.Context, toEmail, fu
 	}
 	if _, err := s.client.Emails.Send(params); err != nil {
 		return fmt.Errorf("services.EmailService.SendInterestFormApproved: %w", err)
+	}
+	return nil
+}
+
+// SendClanInterestConfirmation sends a confirmation to someone who expressed interest
+// in joining an existing clan via the landing page.
+func (s *EmailService) SendClanInterestConfirmation(ctx context.Context, toEmail, fullName, clanName string) error {
+	body := fmt.Sprintf(`
+    <p style="margin:0 0 6px;font-family:Georgia,serif;font-size:12px;letter-spacing:3px;color:#A0522D;text-transform:uppercase;">Thank You</p>
+    <h1 style="margin:0 0 20px;font-family:Georgia,serif;font-size:24px;font-weight:bold;color:#111111;line-height:1.3;">We've received your interest</h1>
+    <div style="width:40px;height:2px;background:#CDB53F;margin-bottom:24px;"></div>
+
+    <p style="font-family:Georgia,serif;font-size:15px;color:#444444;line-height:1.7;margin:0 0 16px;">
+      Hi <strong>%s</strong>,
+    </p>
+    <p style="font-family:Georgia,serif;font-size:15px;color:#444444;line-height:1.7;margin:0 0 24px;">
+      Your expression of interest in joining the <strong>%s</strong> clan has been received. The clan leader will review your details and get in touch with you soon.
+    </p>
+
+    <table cellpadding="0" cellspacing="0" width="100%%" style="background:#faf9f6;border:1px solid #e8e4dc;border-left:4px solid #CDB53F;border-radius:0 8px 8px 0;margin-bottom:28px;">
+      <tr><td style="padding:16px 20px;">
+        <p style="margin:0 0 4px;font-family:Georgia,serif;font-size:11px;letter-spacing:3px;text-transform:uppercase;color:#A0522D;">Clan</p>
+        <p style="margin:0;font-family:Georgia,serif;font-size:18px;font-weight:bold;color:#111111;">%s</p>
+      </td></tr>
+    </table>
+
+    <p style="font-family:Georgia,serif;font-size:14px;color:#666;line-height:1.6;margin:0 0 28px;">
+      The clan leader may call you to verify that you are indeed part of this clan before adding you to the system.
+    </p>
+
+    <p style="font-family:Georgia,serif;font-size:12px;color:#aaa;margin-top:32px;line-height:1.6;">
+      Questions? Reach us at <a href="mailto:info@kinfolkapp.me" style="color:#A0522D;">info@kinfolkapp.me</a>.
+    </p>`, fullName, clanName, clanName)
+
+	html := emailShell("Interest in "+clanName+" Clan — Kinfolk", body)
+
+	params := &resend.SendEmailRequest{
+		From:    fromAddress,
+		To:      []string{toEmail},
+		Subject: "Your interest in the " + clanName + " clan has been received",
+		Html:    html,
+	}
+	if _, err := s.client.Emails.Send(params); err != nil {
+		return fmt.Errorf("services.EmailService.SendClanInterestConfirmation: %w", err)
 	}
 	return nil
 }

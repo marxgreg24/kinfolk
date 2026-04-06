@@ -64,6 +64,34 @@ func (s *MemberService) AddMember(
 	return member, nil
 }
 
+// AddMemberDirect creates a member record that is already linked to an existing user.
+// Used when the clan leader provisions a full account for a new member.
+func (s *MemberService) AddMemberDirect(
+	ctx context.Context,
+	memberID, clanID, familyID, fullName string,
+	memberEmail *string,
+	profilePicURL *string,
+	userID *string,
+	invitedBy string,
+) (*models.Member, error) {
+	fid := familyID
+	member := &models.Member{
+		ID:                memberID,
+		ClanID:            clanID,
+		FamilyID:          &fid,
+		FullName:          fullName,
+		Email:             memberEmail,
+		ProfilePictureURL: profilePicURL,
+		UserID:            userID,
+		InvitedBy:         invitedBy,
+	}
+	if err := s.repo.CreateMember(ctx, member); err != nil {
+		return nil, fmt.Errorf("services.MemberService.AddMemberDirect: %w", err)
+	}
+	_ = s.audit.Log(ctx, invitedBy, "member_added", "member", member.ID, nil)
+	return member, nil
+}
+
 // ListMembers returns all members belonging to a clan.
 func (s *MemberService) ListMembers(ctx context.Context, clanID string) ([]*models.Member, error) {
 	members, err := s.repo.ListMembersByClan(ctx, clanID)

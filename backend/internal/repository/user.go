@@ -22,12 +22,12 @@ func NewUserRepository(db *sqlx.DB) *UserRepository {
 func (r *UserRepository) CreateUser(ctx context.Context, user *models.User) error {
 	_, err := r.db.ExecContext(ctx, `
 		INSERT INTO users (
-			id, clerk_user_id, full_name, email, role, clan_id,
+			id, clerk_user_id, full_name, email, phone, role, clan_id,
 			is_suspended, password_reset_required, created_at, updated_at
 		) VALUES (
-			$1, $2, $3, $4, $5, $6, $7, $8, NOW(), NOW()
+			$1, $2, $3, $4, $5, $6, $7, $8, $9, NOW(), NOW()
 		)`,
-		user.ID, user.ClerkUserID, user.FullName, user.Email, user.Role, user.ClanID,
+		user.ID, user.ClerkUserID, user.FullName, user.Email, user.Phone, user.Role, user.ClanID,
 		user.IsSuspended, user.PasswordResetRequired,
 	)
 	if err != nil {

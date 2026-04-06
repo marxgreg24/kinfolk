@@ -79,9 +79,10 @@ export const useAddMember = (clanId: string) => {
   return useMutation({
     mutationFn: (data: {
       full_name: string
-      email?: string
+      email: string
+      relationship_type: string
+      family_id: string
       profile_picture_url?: string
-      relationship_to_leader: string
     }) => addMember(clanId, data),
     onSuccess: (member) => {
       notify.success(`${member.full_name} has been added to your clan.`)

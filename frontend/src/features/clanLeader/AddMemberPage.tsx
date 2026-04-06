@@ -1,11 +1,12 @@
 import { useState, useRef } from 'react'
-import { useSelector, useDispatch } from 'react-redux'
+import { useSelector } from 'react-redux'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import notify from '@/utils/toast'
-import type { RootState, AppDispatch } from '@/store'
-import { setUser } from '@/store/slices/authSlice'
-import type { User } from '@/types/user'
-import { useAddMember, useCreateClan } from '@/hooks/useClanLeader'
+import type { RootState } from '@/store'
+import { useAddMember } from '@/hooks/useClanLeader'
 import { useGetClanMembers } from '@/hooks/useClan'
+import { useListFamilies, useCreateFamily } from '@/hooks/useFamilies'
+import { useArchiveClanMemberInterest } from '@/hooks/useClanMemberInterests'
 import { RELATIONSHIP_TYPES } from '@/utils/relationships'
 import Sidebar from '@/components/layout/Sidebar'
 import Spinner from '@/components/ui/Spinner'
@@ -13,29 +14,40 @@ import Input from '@/components/ui/Input'
 import Button from '@/components/ui/Button'
 import Avatar from '@/components/ui/Avatar'
 import Badge from '@/components/ui/Badge'
+import Modal from '@/components/ui/Modal'
 import apiClient from '@/api/axios'
 
-const EMPTY_FORM = { full_name: '', email: '', relationship_to_leader: '' }
+const EMPTY_FORM = { full_name: '', email: '', relationship_type: '', family_id: '' }
 
 const AddMemberPage = () => {
+  const navigate = useNavigate()
   const user = useSelector((s: RootState) => s.auth.user)
-  const dispatch = useDispatch<AppDispatch>()
+  const [searchParams] = useSearchParams()
+
+  // Pre-fill from query params when navigated from MemberInterestsPage
+  const prefillName = searchParams.get('full_name') ?? ''
+  const prefillEmail = searchParams.get('email') ?? ''
+  const interestId = searchParams.get('interest_id')
+
   const { mutate: addMember, isPending } = useAddMember(user?.clan_id ?? '')
   const { data: clanMembersData, isLoading: membersLoading } = useGetClanMembers(user?.clan_id ?? '')
   const members = clanMembersData?.members ?? []
 
-  const [form, setForm] = useState(EMPTY_FORM)
+  const { data: families = [], isLoading: familiesLoading } = useListFamilies()
+  const { mutate: archiveInterest } = useArchiveClanMemberInterest()
+
+  const [form, setForm] = useState({ ...EMPTY_FORM, full_name: prefillName, email: prefillEmail })
   const [profilePictureUrl, setProfilePictureUrl] = useState('')
   const [isUploading, setIsUploading] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  // Create clan state
-  const [clanName, setClanName] = useState('')
-  const refreshUser = async () => {
-    const res = await apiClient.get('/api/v1/users/me')
-    dispatch(setUser((res.data as { data: User }).data))
-  }
-  const { mutate: createClan, isPending: isCreating } = useCreateClan(refreshUser)
+  // Inline family creation modal
+  const [createFamilyOpen, setCreateFamilyOpen] = useState(false)
+  const [newFamilyName, setNewFamilyName] = useState('')
+  const { mutate: createFamily, isPending: isCreatingFamily } = useCreateFamily(() => {
+    setCreateFamilyOpen(false)
+    setNewFamilyName('')
+  })
 
   if (!user) return <Spinner fullScreen />
 
@@ -59,14 +71,28 @@ const AddMemberPage = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    if (!user.clan_id || !form.full_name.trim() || !form.relationship_to_leader) return
+    if (!user.clan_id || !form.full_name.trim() || !form.email.trim() || !form.relationship_type || !form.family_id) return
     addMember(
-      { full_name: form.full_name.trim(), email: form.email.trim() || undefined, profile_picture_url: profilePictureUrl || undefined, relationship_to_leader: form.relationship_to_leader },
-      { onSuccess: () => { setForm(EMPTY_FORM); setProfilePictureUrl('') } },
+      {
+        full_name: form.full_name.trim(),
+        email: form.email.trim(),
+        relationship_type: form.relationship_type,
+        family_id: form.family_id,
+        profile_picture_url: profilePictureUrl || undefined,
+      },
+      {
+        onSuccess: () => {
+          setForm(EMPTY_FORM)
+          setProfilePictureUrl('')
+          // Archive the interest form that led to this add, if any
+          if (interestId) archiveInterest(interestId)
+        },
+      },
     )
   }
 
-  const isDisabled = !user.clan_id || !form.full_name.trim() || !form.relationship_to_leader || isPending || isUploading
+  const isDisabled = !user.clan_id || !form.full_name.trim() || !form.email.trim() ||
+    !form.relationship_type || !form.family_id || isPending || isUploading
 
   const selectCls = 'w-full border border-gray-200 rounded-xl px-4 py-3 text-sm font-merriweather text-gray-900 bg-white hover:border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary/25 focus:border-primary transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed'
 
@@ -79,40 +105,15 @@ const AddMemberPage = () => {
           <div className="mb-7">
             <p className="text-xs font-merriweather tracking-[0.25em] text-secondary uppercase mb-1">Clan Leader</p>
             <h1 className="text-2xl font-bold text-gray-900 font-merriweather">Add Clan Member</h1>
-            <p className="text-gray-400 text-sm mt-1 font-merriweather">Add a new member to your clan and define your relationship to them.</p>
+            <p className="text-gray-400 text-sm mt-1 font-merriweather">Add a new member to your clan, assign them a family, and define your relationship.</p>
           </div>
 
           {!user.clan_id && (
-            <div className="flex flex-col items-center justify-center py-20 gap-6">
-              <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
-                <svg viewBox="0 0 24 24" fill="none" stroke="#CDB53F" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" className="w-8 h-8">
-                  <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>
-                </svg>
-              </div>
-              <div className="text-center max-w-sm">
-                <h2 className="font-merriweather font-bold text-gray-800 text-xl mb-2">Create your clan first</h2>
-                <p className="font-merriweather text-gray-400 text-sm leading-relaxed">
-                  Give your clan a name to get started. You'll be able to add members, build your family tree, and more.
-                </p>
-              </div>
-              <div className="w-full max-w-sm flex flex-col gap-3">
-                <Input
-                  label="Clan Name"
-                  required
-                  value={clanName}
-                  onChange={(e) => setClanName(e.target.value)}
-                  placeholder="e.g. The Nakato Family"
-                />
-                <Button
-                  variant="primary"
-                  isLoading={isCreating}
-                  disabled={isCreating || !clanName.trim()}
-                  className="rounded-full py-3"
-                  onClick={() => createClan(clanName.trim())}
-                >
-                  Create Clan
-                </Button>
-              </div>
+            <div className="flex flex-col items-center justify-center py-20 gap-4">
+              <p className="font-merriweather text-gray-500 text-sm">You must create a clan first.</p>
+              <Button variant="primary" onClick={() => navigate('/clan-leader/create')} className="rounded-full">
+                Create Clan
+              </Button>
             </div>
           )}
 
@@ -122,17 +123,64 @@ const AddMemberPage = () => {
               <div className="h-[2px] bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
               <div className="p-6">
                 <h2 className="font-merriweather font-bold text-base text-gray-900 mb-5">Member Details</h2>
+                {interestId && (
+                  <div className="bg-primary/5 border border-primary/20 rounded-xl px-4 py-3 mb-4 text-xs font-merriweather text-primary">
+                    Pre-filled from interest form — complete and submit to add this person to your clan.
+                  </div>
+                )}
                 <form onSubmit={handleSubmit} className="flex flex-col gap-4">
                   <Input label="Full Name" required value={form.full_name} onChange={handleChange('full_name')}
                     placeholder="e.g. Amara Nakato" disabled={!user.clan_id} />
-                  <Input label="Email (optional)" type="email" value={form.email} onChange={handleChange('email')}
+                  <Input label="Email Address" required type="email" value={form.email} onChange={handleChange('email')}
                     placeholder="member@example.com" disabled={!user.clan_id} />
 
+                  {/* Family selector */}
+                  <div>
+                    <label className="text-xs font-merriweather font-semibold uppercase tracking-wider text-gray-500 mb-1.5 block">
+                      Family <span className="text-primary">*</span>
+                    </label>
+                    {familiesLoading ? (
+                      <div className="flex items-center gap-2 py-2">
+                        <Spinner size="sm" />
+                        <span className="text-xs text-gray-400 font-merriweather">Loading families…</span>
+                      </div>
+                    ) : (
+                      <div className="flex gap-2">
+                        <select
+                          value={form.family_id}
+                          onChange={handleChange('family_id')}
+                          disabled={!user.clan_id}
+                          required
+                          className={selectCls + ' flex-1'}
+                        >
+                          <option value="">Select family…</option>
+                          {families.map((f) => (
+                            <option key={f.id} value={f.id}>{f.name}</option>
+                          ))}
+                        </select>
+                        <button
+                          type="button"
+                          onClick={() => setCreateFamilyOpen(true)}
+                          className="px-3 py-2 border border-gray-200 rounded-xl text-xs font-merriweather text-primary hover:border-primary/40 hover:bg-primary/5 transition-colors flex-shrink-0"
+                          title="Create a new family"
+                        >
+                          + New
+                        </button>
+                      </div>
+                    )}
+                    {!familiesLoading && families.length === 0 && (
+                      <p className="text-xs text-amber-600 font-merriweather mt-1">
+                        No families yet — click &quot;+ New&quot; to create one first.
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Relationship selector */}
                   <div>
                     <label className="text-xs font-merriweather font-semibold uppercase tracking-wider text-gray-500 mb-1.5 block">
                       Relationship to You <span className="text-primary">*</span>
                     </label>
-                    <select value={form.relationship_to_leader} onChange={handleChange('relationship_to_leader')}
+                    <select value={form.relationship_type} onChange={handleChange('relationship_type')}
                       disabled={!user.clan_id} required className={selectCls}>
                       <option value="">Select relationship…</option>
                       {RELATIONSHIP_TYPES.map((r) => (
@@ -192,22 +240,53 @@ const AddMemberPage = () => {
                 )}
 
                 <ul className="flex flex-col gap-2">
-                  {members.map((m) => (
-                    <li key={m.id} className="flex items-center gap-3 p-3 rounded-xl hover:bg-gray-50 transition-colors">
-                      <Avatar src={m.profile_picture_url} name={m.full_name} size="sm" />
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold text-gray-900 font-merriweather truncate">{m.full_name}</p>
-                        {m.email && <p className="text-xs text-gray-400 font-merriweather truncate">{m.email}</p>}
-                      </div>
-                      <Badge status="active" label="Member" />
-                    </li>
-                  ))}
+                  {members.map((m) => {
+                    const familyName = m.family_id ? families.find((f) => f.id === m.family_id)?.name : undefined
+                    return (
+                      <li key={m.id} className="flex items-center gap-3 p-3 rounded-xl hover:bg-gray-50 transition-colors">
+                        <Avatar src={m.profile_picture_url} name={m.full_name} size="sm" />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-semibold text-gray-900 font-merriweather truncate">{m.full_name}</p>
+                          {familyName
+                            ? <p className="text-xs text-gray-400 font-merriweather truncate">{familyName}</p>
+                            : m.email && <p className="text-xs text-gray-400 font-merriweather truncate">{m.email}</p>
+                          }
+                        </div>
+                        <Badge status="active" label="Member" />
+                      </li>
+                    )
+                  })}
                 </ul>
               </div>
             </div>
           </div>
         </main>
       </div>
+
+      {/* Create family modal */}
+      <Modal isOpen={createFamilyOpen} onClose={() => setCreateFamilyOpen(false)} title="Create New Family" size="sm">
+        <p className="text-sm text-gray-500 font-merriweather mb-4 leading-relaxed">
+          Give this family a name. You can add more families any time.
+        </p>
+        <form
+          onSubmit={(e) => { e.preventDefault(); if (newFamilyName.trim()) createFamily({ name: newFamilyName.trim() }) }}
+          className="flex flex-col gap-4"
+        >
+          <Input
+            label="Family Name"
+            required
+            value={newFamilyName}
+            onChange={(e) => setNewFamilyName(e.target.value)}
+            placeholder="e.g. The Nakato Family"
+          />
+          <div className="flex gap-3 justify-end">
+            <Button type="button" variant="outline" size="sm" onClick={() => setCreateFamilyOpen(false)}>Cancel</Button>
+            <Button type="submit" variant="primary" size="sm" isLoading={isCreatingFamily} disabled={!newFamilyName.trim()}>
+              Create Family
+            </Button>
+          </div>
+        </form>
+      </Modal>
     </div>
   )
 }

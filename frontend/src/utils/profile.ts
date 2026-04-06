@@ -10,5 +10,7 @@ export const isProfileComplete = (user: User): boolean => (
 export const getPostAuthPath = (user: User): string => {
   if (user.role === 'admin') return '/admin'
   if (user.role === 'clan_leader') return user.password_reset_required ? '/reset-password' : '/clan-leader/dashboard'
-  return isProfileComplete(user) ? '/dashboard' : '/complete-profile'
+  // General users provisioned by clan leader must set a personal password first.
+  if (user.password_reset_required) return '/welcome'
+  return '/dashboard'
 }

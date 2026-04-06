@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { saveAs } from 'file-saver'
 import notify from '@/utils/toast'
 import {
+  listPublicClans,
   getClan,
   getClanMembers,
   getClanRelationships,
@@ -9,6 +10,13 @@ import {
   exportClanGEDCOM,
   createClan,
 } from '@/api/clans'
+
+export const useListPublicClans = () =>
+  useQuery({
+    queryKey: ['public-clans'],
+    queryFn: listPublicClans,
+    staleTime: 60_000,
+  })
 
 export const useGetClan = (id: string) =>
   useQuery({

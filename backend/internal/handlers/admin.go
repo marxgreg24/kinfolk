@@ -74,9 +74,21 @@ func (h *AdminHandler) CreateClanLeader(c *gin.Context) {
 	var body struct {
 		Email    string `json:"email" binding:"required,email"`
 		FullName string `json:"full_name" binding:"required"`
+		Phone    string `json:"phone" binding:"required"`
 	}
 	if err := c.ShouldBindJSON(&body); err != nil {
 		errorResponse(c, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	ctx := c.Request.Context()
+	existingUser, err := h.userRepo.GetUserByEmail(ctx, body.Email)
+	if err != nil {
+		errorResponse(c, http.StatusInternalServerError, err.Error())
+		return
+	}
+	if existingUser != nil {
+		errorResponse(c, http.StatusConflict, "A user with this email already exists.")
 		return
 	}
 
@@ -89,7 +101,7 @@ func (h *AdminHandler) CreateClanLeader(c *gin.Context) {
 	clerk.SetKey(h.cfg.ClerkSecretKey)
 	skipChecks := true
 	emails := []string{body.Email}
-	clerkCreated, err := clerkuser.Create(c.Request.Context(), &clerkuser.CreateParams{
+	clerkCreated, err := clerkuser.Create(ctx, &clerkuser.CreateParams{
 		EmailAddresses:     &emails,
 		Password:           &tempPassword,
 		FirstName:          &firstName,
@@ -97,30 +109,38 @@ func (h *AdminHandler) CreateClanLeader(c *gin.Context) {
 		SkipPasswordChecks: &skipChecks,
 	})
 	if err != nil {
+		if strings.Contains(err.Error(), "form_identifier_exists") {
+			errorResponse(c, http.StatusConflict, "That email address is already registered. Use a different email address.")
+			return
+		}
+
 		errorResponse(c, http.StatusInternalServerError, "Failed to create Clerk account: "+err.Error())
 		return
 	}
+
+	phone := body.Phone
 
 	user := &models.User{
 		ID:                    uuid.New().String(),
 		ClerkUserID:           clerkCreated.ID,
 		FullName:              body.FullName,
 		Email:                 body.Email,
+		Phone:                 &phone,
 		Role:                  "clan_leader",
 		PasswordResetRequired: true,
 	}
 
-	if err := h.userRepo.CreateUser(c.Request.Context(), user); err != nil {
+	if err := h.userRepo.CreateUser(ctx, user); err != nil {
 		// Best-effort: delete the Clerk user to avoid an orphaned account.
-		_, _ = clerkuser.Delete(c.Request.Context(), clerkCreated.ID)
+		_, _ = clerkuser.Delete(ctx, clerkCreated.ID)
 		errorResponse(c, http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	_ = h.emailSvc.SendWelcomeClanLeader(c.Request.Context(), body.Email, body.FullName, tempPassword)
+	_ = h.emailSvc.SendWelcomeClanLeader(ctx, body.Email, body.FullName, tempPassword)
 
 	// Return the temp password so the admin can share it if needed.
-	c.JSON(http.StatusCreated, gin.H{
+	createdResponse(c, gin.H{
 		"user":          user,
 		"temp_password": tempPassword,
 	})

@@ -98,6 +98,18 @@ func (h *ClanHandler) Create(c *gin.Context) {
 	createdResponse(c, clan)
 }
 
+// ListPublic returns all clans for public display on the landing page (name + id only).
+//
+// GET /api/v1/clans
+func (h *ClanHandler) ListPublic(c *gin.Context) {
+	clans, err := h.clanSvc.ListAll(c.Request.Context())
+	if err != nil {
+		errorResponse(c, http.StatusInternalServerError, err.Error())
+		return
+	}
+	successResponse(c, clans)
+}
+
 // ListAll returns all clans. Used by admin to display clan names alongside leader accounts.
 //
 // GET /admin/clans

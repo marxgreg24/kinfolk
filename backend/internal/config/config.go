@@ -6,6 +6,7 @@ package config
 import (
 	"errors"
 	"os"
+	"strings"
 
 	"github.com/joho/godotenv"
 )
@@ -27,7 +28,10 @@ type Config struct {
 	AdminPassword          string
 	TempClanLeaderPassword string
 	FrontendURL            string
-	AppEnv                 string
+	// ExtraAllowedOrigins holds additional CORS origins (comma-separated) beyond FrontendURL.
+	// Set via EXTRA_ALLOWED_ORIGINS in the environment.
+	ExtraAllowedOrigins []string
+	AppEnv              string
 }
 
 // Load reads the .env file (if present) then populates a Config from the environment.
@@ -52,6 +56,7 @@ func Load() (*Config, error) {
 		AdminPassword:          os.Getenv("ADMIN_PASSWORD"),
 		TempClanLeaderPassword: os.Getenv("TEMP_CLAN_LEADER_PASSWORD"),
 		FrontendURL:            os.Getenv("FRONTEND_URL"),
+		ExtraAllowedOrigins:    parseOrigins(os.Getenv("EXTRA_ALLOWED_ORIGINS")),
 		AppEnv:                 os.Getenv("APP_ENV"),
 	}
 
@@ -88,4 +93,19 @@ func (c *Config) validate() error {
 // IsDevelopment reports whether the application is running in development mode.
 func (c *Config) IsDevelopment() bool {
 	return c.AppEnv == "development"
+}
+
+// parseOrigins splits a comma-separated origins string into a trimmed slice,
+// discarding any empty entries.
+func parseOrigins(s string) []string {
+	if s == "" {
+		return nil
+	}
+	var out []string
+	for _, raw := range strings.Split(s, ",") {
+		if trimmed := strings.TrimSpace(raw); trimmed != "" {
+			out = append(out, trimmed)
+		}
+	}
+	return out
 }

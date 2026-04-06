@@ -15,7 +15,8 @@ const ProtectedRoute = ({ children }: { children: ReactNode }) => {
 
   if (!isSignedIn) return <Navigate to="/login" replace />
 
-  if (user && !isProfileComplete(user) && location.pathname !== '/complete-profile') {
+  // Don't force profile completion until the user has set their own password first.
+  if (user && !user.password_reset_required && !isProfileComplete(user) && location.pathname !== '/complete-profile') {
     return <Navigate to="/complete-profile" replace />
   }
 

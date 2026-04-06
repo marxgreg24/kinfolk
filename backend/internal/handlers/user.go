@@ -2,6 +2,7 @@
 package handlers
 
 import (
+	"log"
 	"net/http"
 	"strings"
 
@@ -45,9 +46,11 @@ func (h *UserHandler) GetMe(c *gin.Context) {
 		return
 	}
 	if user.ClanID != nil {
+		// Best-effort: link the user to their member slot. Failure is non-fatal
+		// (same policy as auth/sync) — a linking error must not block the user
+		// from loading their profile or accessing the chat.
 		if err := h.memberLink.LinkMemberOnJoin(c.Request.Context(), user, *user.ClanID); err != nil {
-			errorResponse(c, http.StatusInternalServerError, err.Error())
-			return
+			log.Printf("LinkMemberOnJoin user=%s clan=%s: %v", user.ID, *user.ClanID, err)
 		}
 	}
 

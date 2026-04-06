@@ -2,6 +2,7 @@ import React from 'react'
 import { RouterProvider } from 'react-router-dom'
 import { Toaster } from 'react-hot-toast'
 import { router } from './router'
+import AuthBootstrap from '@/components/layout/AuthBootstrap'
 
 interface ErrorBoundaryState {
   hasError: boolean
@@ -42,8 +43,10 @@ class ErrorBoundary extends React.Component<
 function App() {
   return (
     <ErrorBoundary>
-      <Toaster position="top-right" />
-      <RouterProvider router={router} />
+      <AuthBootstrap>
+        <Toaster position="top-right" />
+        <RouterProvider router={router} />
+      </AuthBootstrap>
     </ErrorBoundary>
   )
 }

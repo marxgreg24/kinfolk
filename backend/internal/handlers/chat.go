@@ -3,6 +3,8 @@ package handlers
 
 import (
 	"context"
+	"fmt"
+	"log"
 	"net/http"
 	"time"
 
@@ -69,40 +71,58 @@ func (h *ChatHandler) ensureClanChannel(ctx context.Context, currentUser *models
 		return err
 	}
 
-	memberIDs := make([]string, 0, len(clanUsers))
-	streamUsers := make([]*streamchat.User, 0, len(clanUsers))
-	for _, clanUser := range clanUsers {
-		memberIDs = append(memberIDs, clanUser.ID)
-		streamUser := &streamchat.User{
-			ID:   clanUser.ID,
-			Name: clanUser.FullName,
+	// Build de-duplicated member and Stream user lists.
+	// Always include currentUser even if ListUsersByClan doesn't return them yet
+	// (e.g. clan_id was just set and hasn't propagated).
+	seen := make(map[string]bool)
+	memberIDs := make([]string, 0, len(clanUsers)+1)
+	streamUsers := make([]*streamchat.User, 0, len(clanUsers)+1)
+
+	addStreamUser := func(u *models.User) {
+		if seen[u.ID] {
+			return
 		}
-		if clanUser.ProfilePictureURL != nil {
-			streamUser.Image = *clanUser.ProfilePictureURL
+		seen[u.ID] = true
+		memberIDs = append(memberIDs, u.ID)
+		su := &streamchat.User{ID: u.ID, Name: u.FullName}
+		if u.ProfilePictureURL != nil {
+			su.Image = *u.ProfilePictureURL
 		}
-		streamUsers = append(streamUsers, streamUser)
+		streamUsers = append(streamUsers, su)
 	}
 
+	for _, u := range clanUsers {
+		addStreamUser(u)
+	}
+	addStreamUser(currentUser) // always ensure the calling user is present
+
+	// Upsert all users so Stream knows about them before we add them to the channel.
 	if len(streamUsers) > 0 {
 		if _, err := client.UpsertUsers(ctx, streamUsers...); err != nil {
-			return err
+			return fmt.Errorf("upsert stream users: %w", err)
 		}
 	}
 
-	if len(memberIDs) == 0 {
-		memberIDs = append(memberIDs, currentUser.ID)
+	// Get-or-create the channel.
+	// We use the first member as the creator (stable across calls); if the channel
+	// already exists Stream simply returns it — the creator field is ignored.
+	creatorID := currentUser.ID
+	if len(memberIDs) > 0 {
+		creatorID = memberIDs[0]
+	}
+	if _, err := client.CreateChannel(ctx, "messaging", clanID, creatorID, &streamchat.ChannelRequest{}); err != nil {
+		return fmt.Errorf("get or create channel: %w", err)
 	}
 
-	_, err = client.CreateChannel(ctx, "messaging", clanID, currentUser.ID, &streamchat.ChannelRequest{
-		Members: memberIDs,
-	})
-	if err != nil {
-		channel := client.Channel("messaging", clanID)
-		if _, addErr := channel.AddMembers(ctx, memberIDs); addErr != nil {
-			return err
-		}
+	// Always call AddMembers — it is idempotent and is the only reliable way to
+	// add users to an existing channel. Passing Members in ChannelRequest only
+	// works during initial creation; it is silently ignored for existing channels.
+	channel := client.Channel("messaging", clanID)
+	if _, err := channel.AddMembers(ctx, memberIDs); err != nil {
+		return fmt.Errorf("add members to channel: %w", err)
 	}
 
+	log.Printf("ensureClanChannel: clan=%s members=%v", clanID, memberIDs)
 	return nil
 }
 

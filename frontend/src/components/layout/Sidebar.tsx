@@ -33,6 +33,7 @@ const navItems: Record<Role, NavItem[]> = {
   clan_leader: [
     { label: 'Dashboard', to: '/clan-leader/dashboard', icon: <Icon path={<><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></>} /> },
     { label: 'Add Member', to: '/clan-leader/members/add', icon: <Icon path={<><path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></>} /> },
+    { label: 'Member Interests', to: '/clan-leader/member-interests', icon: <Icon path={<><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></>} /> },
     { label: 'Family Tree', to: '/clan/tree', icon: <Icon path={<><circle cx="12" cy="4" r="2"/><circle cx="6" cy="14" r="2"/><circle cx="18" cy="14" r="2"/><path d="M12 6v4M12 10l-4 2M12 10l4 2"/><circle cx="12" cy="20" r="2"/><path d="M12 16v2"/></>} /> },
     { label: 'Conflicts', to: '/clan-leader/conflicts', icon: <Icon path={<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>} /> },
     { label: 'Clan Chat', to: '/clan/chat', icon: <Icon path={<path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/>} /> },

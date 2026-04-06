@@ -6,9 +6,10 @@ export const addMember = async (
   clanId: string,
   data: {
     full_name: string
-    email?: string
+    email: string
+    relationship_type: string
+    family_id: string
     profile_picture_url?: string
-    relationship_to_leader: string
   },
 ): Promise<Member> => {
   const res = await apiClient.post(`/api/v1/clan-leader/clans/${clanId}/members`, data)

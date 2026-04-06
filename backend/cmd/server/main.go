@@ -42,6 +42,8 @@ func main() {
 	userRepo := repository.NewUserRepository(database)
 	clanRepo := repository.NewClanRepository(database)
 	memberRepo := repository.NewMemberRepository(database)
+	familyRepo := repository.NewFamilyRepository(database)
+	clanMemberInterestRepo := repository.NewClanMemberInterestRepository(database)
 	relationshipRepo := repository.NewRelationshipRepository(database)
 	conflictRepo := repository.NewConflictRepository(database)
 	interestFormRepo := repository.NewInterestFormRepository(database)
@@ -64,18 +66,20 @@ func main() {
 
 	// ── Handlers ─────────────────────────────────────────────────────────────
 	h := &router.Handlers{
-		Auth:            handlers.NewAuthHandler(svcs.User, svcs.MemberLink, userRepo),
-		User:            handlers.NewUserHandler(svcs.User, svcs.MemberLink, cfg),
-		Upload:          handlers.NewUploadHandler(cfg),
-		Clan:            handlers.NewClanHandler(svcs.Clan),
-		Member:          handlers.NewMemberHandler(svcs.Member),
-		Relationship:    handlers.NewRelationshipHandler(svcs.Relationship, memberRepo),
-		Conflict:        handlers.NewConflictHandler(svcs.Conflict, svcs.User),
-		Admin:           handlers.NewAdminHandler(userRepo, interestFormRepo, svcs.User, svcs.Email, svcs.Audit, cfg),
-		InterestForm:    handlers.NewInterestFormHandler(interestFormRepo),
-		Chat:            handlers.NewChatHandler(cfg, svcs.User, userRepo),
-		Export:          handlers.NewExportHandler(svcs.Gedcom),
-		MatchSuggestion: handlers.NewMatchSuggestionHandler(matchRepo, svcs.MemberLink, svcs.Audit, userRepo),
+		Auth:               handlers.NewAuthHandler(svcs.User, svcs.MemberLink, userRepo),
+		User:               handlers.NewUserHandler(svcs.User, svcs.MemberLink, cfg),
+		Upload:             handlers.NewUploadHandler(cfg),
+		Clan:               handlers.NewClanHandler(svcs.Clan),
+		Member:             handlers.NewMemberHandler(svcs.Member, svcs.Relationship, userRepo, clanRepo, svcs.Email, cfg),
+		Family:             handlers.NewFamilyHandler(familyRepo, userRepo, memberRepo),
+		ClanMemberInterest: handlers.NewClanMemberInterestHandler(clanMemberInterestRepo, clanRepo, userRepo, svcs.Email),
+		Relationship:       handlers.NewRelationshipHandler(svcs.Relationship, memberRepo),
+		Conflict:           handlers.NewConflictHandler(svcs.Conflict, svcs.User),
+		Admin:              handlers.NewAdminHandler(userRepo, interestFormRepo, svcs.User, svcs.Email, svcs.Audit, cfg),
+		InterestForm:       handlers.NewInterestFormHandler(interestFormRepo),
+		Chat:               handlers.NewChatHandler(cfg, svcs.User, userRepo),
+		Export:             handlers.NewExportHandler(svcs.Gedcom),
+		MatchSuggestion:    handlers.NewMatchSuggestionHandler(matchRepo, svcs.MemberLink, svcs.Audit, userRepo),
 	}
 
 	r := router.SetupRouter(h, cfg, database)

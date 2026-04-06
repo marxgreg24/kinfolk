@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { useSignIn, useAuth, useUser } from '@clerk/clerk-react'
 import { useDispatch } from 'react-redux'
 import type { AppDispatch } from '@/store'
@@ -196,12 +196,9 @@ const LoginPage = () => {
             </Button>
           </form>
 
-          <div className="mt-6 pt-6 border-t border-gray-100 flex flex-col gap-3 text-center">
-            <p className="text-sm text-gray-400 font-merriweather">
-              Don&apos;t have an account?{' '}
-              <Link to="/signup" className="text-primary hover:text-secondary font-medium transition-colors">
-                Create one
-              </Link>
+          <div className="mt-6 pt-6 border-t border-gray-100 text-center">
+            <p className="text-xs text-gray-300 font-merriweather leading-relaxed">
+              Access is by invitation only.<br />Contact your clan leader if you haven&apos;t received credentials.
             </p>
           </div>
         </div>

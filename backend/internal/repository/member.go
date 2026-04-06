@@ -21,23 +21,34 @@ func NewMemberRepository(db *sqlx.DB) *MemberRepository {
 
 func (r *MemberRepository) CreateMember(ctx context.Context, member *models.Member) error {
 	_, err := r.db.ExecContext(ctx, `
-		INSERT INTO members (id, clan_id, full_name, email, profile_picture_url, user_id, invited_by, created_at, updated_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, NOW(), NOW())
+		INSERT INTO members (id, clan_id, family_id, full_name, email, profile_picture_url, user_id, invited_by, created_at, updated_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW(), NOW())
 		ON CONFLICT (id) DO UPDATE SET
 			clan_id = EXCLUDED.clan_id,
+			family_id = EXCLUDED.family_id,
 			full_name = EXCLUDED.full_name,
 			email = EXCLUDED.email,
 			profile_picture_url = EXCLUDED.profile_picture_url,
 			user_id = EXCLUDED.user_id,
 			invited_by = EXCLUDED.invited_by,
 			updated_at = NOW()`,
-		member.ID, member.ClanID, member.FullName, member.Email,
+		member.ID, member.ClanID, member.FamilyID, member.FullName, member.Email,
 		member.ProfilePictureURL, member.UserID, member.InvitedBy,
 	)
 	if err != nil {
 		return fmt.Errorf("repository.CreateMember: %w", err)
 	}
 	return nil
+}
+
+func (r *MemberRepository) ListMembersByFamily(ctx context.Context, familyID string) ([]*models.Member, error) {
+	var members []*models.Member
+	if err := r.db.SelectContext(ctx, &members,
+		`SELECT * FROM members WHERE family_id = $1 ORDER BY full_name`, familyID,
+	); err != nil {
+		return nil, fmt.Errorf("repository.ListMembersByFamily: %w", err)
+	}
+	return members, nil
 }
 
 func (r *MemberRepository) GetMemberByID(ctx context.Context, id string) (*models.Member, error) {

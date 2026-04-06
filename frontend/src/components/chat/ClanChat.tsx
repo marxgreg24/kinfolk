@@ -434,16 +434,39 @@ const ClanChat = () => {
         await ch.watch()
 
         const updatePresence = () => {
-          const list: ChatMember[] = Object.values(ch.state.members)
+          // Build a presence map from Stream (user_id → online boolean)
+          const presenceMap = new Map<string, boolean>()
+          Object.values(ch.state.members).forEach((m) => {
+            if (m.user_id) presenceMap.set(m.user_id, m.user?.online ?? false)
+          })
+
+          // Use backend clan members as source of truth — this means every
+          // clan member (linked or not yet online) always shows in the panel.
+          // Only include members that have a linked user account (user_id set).
+          const backendMembers = clanMembersData?.members ?? []
+          const list: ChatMember[] = backendMembers
             .filter((m) => !!m.user_id)
             .map((m) => ({
               id: m.user_id!,
-              name: m.user?.name ?? 'Member',
-              image: m.user?.image as string | undefined,
-              online: m.user?.online ?? false,
+              name: m.full_name,
+              image: m.profile_picture_url ?? undefined,
+              online: presenceMap.get(m.user_id!) ?? false,
             }))
-          setMembers(list)
-          setOnlineCount(Math.max(1, list.filter((m) => m.online).length))
+
+          // Fallback: if backend members aren't loaded yet, use Stream state
+          const final = list.length > 0
+            ? list
+            : Object.values(ch.state.members)
+                .filter((m) => !!m.user_id)
+                .map((m) => ({
+                  id: m.user_id!,
+                  name: m.user?.name ?? 'Member',
+                  image: m.user?.image as string | undefined,
+                  online: m.user?.online ?? false,
+                }))
+
+          setMembers(final)
+          setOnlineCount(Math.max(1, final.filter((m) => m.online).length))
         }
 
         updatePresence()
@@ -537,37 +560,62 @@ const ClanChat = () => {
 
         {/* ════ Error / empty states ════ */}
         {!tokenLoading && error && (
-          <div className="flex flex-col items-center justify-center flex-1 gap-6 px-6">
+          <div className="flex flex-col items-center justify-center flex-1 px-6">
             {error.includes('not part of a clan') ? (
-              <div className="flex flex-col items-center gap-5 text-center max-w-xs">
-                <div className="w-20 h-20 rounded-2xl bg-primary/10 flex items-center justify-center shadow-sm">
-                  <ChatIcon size="w-10 h-10" />
-                </div>
-                <div>
-                  <h2 className="font-merriweather font-bold text-gray-800 text-lg mb-2">No clan yet</h2>
-                  <p className="font-merriweather text-gray-400 text-sm leading-relaxed">
-                    You haven't been added to a clan. Once your clan leader adds you, the chat will appear here.
-                  </p>
+              /* ── No clan state ── */
+              <div className="bg-white border border-gray-100 rounded-2xl shadow-sm overflow-hidden w-full max-w-sm">
+                <div className="h-[2px] bg-gradient-to-r from-transparent via-primary/40 to-transparent" />
+                <div className="flex flex-col items-center gap-4 text-center p-10">
+                  <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center">
+                    <ChatIcon size="w-8 h-8" />
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-merriweather tracking-[0.25em] text-secondary uppercase mb-2">Clan Chat</p>
+                    <h2 className="font-merriweather font-bold text-gray-900 text-lg mb-2">No clan yet</h2>
+                    <p className="font-merriweather text-gray-400 text-sm leading-relaxed">
+                      You haven't been added to a clan. Once your clan leader adds you, the chat will appear here.
+                    </p>
+                  </div>
                 </div>
               </div>
             ) : (
-              <div className="flex flex-col items-center gap-5 text-center max-w-xs">
-                <div className="w-16 h-16 rounded-2xl bg-red-50 flex items-center justify-center">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth={1.5} className="w-8 h-8">
-                    <circle cx="12" cy="12" r="10" />
-                    <path d="M12 8v4m0 4h.01" strokeLinecap="round" />
-                  </svg>
+              /* ── Connection error state ── */
+              <div className="bg-white border border-gray-100 rounded-2xl shadow-sm overflow-hidden w-full max-w-sm">
+                <div className="h-[2px] bg-gradient-to-r from-transparent via-secondary/40 to-transparent" />
+                <div className="flex flex-col items-center gap-5 text-center p-10">
+                  {/* Icon */}
+                  <div className="relative">
+                    <div className="w-16 h-16 rounded-2xl bg-amber-50 border border-amber-100 flex items-center justify-center">
+                      <svg viewBox="0 0 24 24" fill="none" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" className="w-8 h-8">
+                        <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" stroke="#CDB53F" />
+                        <path d="M12 8v3m0 3.5h.01" stroke="#A0522D" strokeWidth={2} />
+                      </svg>
+                    </div>
+                    <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-secondary/90 flex items-center justify-center">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth={2.5} strokeLinecap="round" className="w-3 h-3">
+                        <path d="M18 6L6 18M6 6l12 12" />
+                      </svg>
+                    </span>
+                  </div>
+
+                  {/* Copy */}
+                  <div>
+                    <p className="text-[10px] font-merriweather tracking-[0.25em] text-secondary uppercase mb-2">Clan Chat</p>
+                    <h2 className="font-merriweather font-bold text-gray-900 text-lg mb-1">Couldn't connect</h2>
+                    <p className="font-merriweather text-gray-400 text-sm leading-relaxed">
+                      We had trouble reaching the clan chat.<br />This is usually temporary — please try again.
+                    </p>
+                  </div>
+
+                  {/* Action */}
+                  <Button
+                    variant="primary"
+                    size="md"
+                    onClick={() => { setError(null); setChatClient(null); setChannel(null); refetch() }}
+                  >
+                    Try again
+                  </Button>
                 </div>
-                <div>
-                  <p className="font-merriweather font-semibold text-gray-700 mb-1">Connection failed</p>
-                  <p className="font-merriweather text-gray-400 text-sm">{error}</p>
-                </div>
-                <Button
-                  variant="outline"
-                  onClick={() => { setError(null); setChatClient(null); setChannel(null); refetch() }}
-                >
-                  Try again
-                </Button>
               </div>
             )}
           </div>
