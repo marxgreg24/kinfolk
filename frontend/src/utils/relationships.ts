@@ -17,6 +17,7 @@ export const RELATIONSHIP_TYPES: { value: RelationshipType; label: string }[] = 
   { value: 'in_law', label: 'In-Law' },
   { value: 'step_parent', label: 'Step Parent' },
   { value: 'step_child', label: 'Step Child' },
+  { value: 'co_wife', label: 'Co-wife' },
 ]
 
 export const getRelationshipLabel = (type: RelationshipType): string => {

@@ -101,11 +101,11 @@ func (h *FamilyHandler) CreateFamily(c *gin.Context) {
 				errorResponse(c, http.StatusInternalServerError, "failed to create leader member record: "+err.Error())
 				return
 			}
-		} else {
-			// Update existing member record to point to this family.
-			familyID := family.ID
-			leaderMember.FamilyID = &familyID
-			if err := h.memberRepo.UpdateMember(ctx, leaderMember); err != nil {
+		} else if leaderMember.FamilyID == nil {
+			// Only assign to this family if the leader has no family yet.
+			// Once assigned (e.g. to the first family they created), we
+			// leave the assignment unchanged on subsequent family creations.
+			if err := h.memberRepo.SetMemberFamilyID(ctx, leaderMember.ID, family.ID); err != nil {
 				errorResponse(c, http.StatusInternalServerError, "failed to update leader member record: "+err.Error())
 				return
 			}

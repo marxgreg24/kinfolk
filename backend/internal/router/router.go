@@ -36,7 +36,6 @@ func SetupRouter(h *Handlers, cfg *config.Config, db *sqlx.DB) *gin.Engine {
 	r.Use(gin.Recovery())
 	r.Use(middleware.Logger())
 	r.Use(middleware.CORS(cfg))
-	r.Static("/uploads", "./uploads")
 
 	r.GET("/health", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{
@@ -71,6 +70,7 @@ func SetupRouter(h *Handlers, cfg *config.Config, db *sqlx.DB) *gin.Engine {
 	protected.GET("families/:id/members", h.Family.ListFamilyMembers)
 
 	protected.POST("relationships", h.Relationship.Submit)
+	protected.PATCH("relationships/:id", h.Relationship.UpdateRelationshipType)
 	protected.GET("clans/:id/relationships", h.Relationship.ListByClan)
 	protected.GET("clans/:id/tree", h.Relationship.GetTreeData)
 

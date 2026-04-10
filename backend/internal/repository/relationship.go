@@ -84,6 +84,17 @@ func (r *RelationshipRepository) UpdateRelationshipStatus(ctx context.Context, i
 	return nil
 }
 
+func (r *RelationshipRepository) UpdateRelationshipType(ctx context.Context, id, relType string) error {
+	_, err := r.db.ExecContext(ctx,
+		`UPDATE relationships SET relationship_type = $1, updated_at = NOW() WHERE id = $2`,
+		relType, id,
+	)
+	if err != nil {
+		return fmt.Errorf("repository.UpdateRelationshipType: %w", err)
+	}
+	return nil
+}
+
 func (r *RelationshipRepository) ListActiveRelationshipsByClan(ctx context.Context, clanID string) ([]*models.Relationship, error) {
 	var rels []*models.Relationship
 	if err := r.db.SelectContext(ctx, &rels,

@@ -9,6 +9,7 @@ import {
   getClanTree,
   exportClanGEDCOM,
   createClan,
+  updateRelationshipType,
 } from '@/api/clans'
 
 export const useListPublicClans = () =>
@@ -57,6 +58,21 @@ export const useExportGEDCOM = () =>
       notify.error('Failed to export family tree. Please try again.')
     },
   })
+
+export const useUpdateRelationshipType = (clanId: string) => {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, relationship_type }: { id: string; relationship_type: string }) =>
+      updateRelationshipType(id, relationship_type),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['clan-relationships', clanId] })
+      notify.success('Relationship updated.')
+    },
+    onError: () => {
+      notify.error('Failed to update relationship. Please try again.')
+    },
+  })
+}
 
 export const useCreateClan = () => {
   const queryClient = useQueryClient()

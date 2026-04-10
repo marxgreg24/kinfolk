@@ -118,7 +118,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\"birth_year\":1990,\"gender\":\"female\",\"profile_picture_url\":\"https://res.cloudinary.com/kinfolk/image/upload/sample.jpg\",\"phone\":\"+256700000000\"}",
+              "raw": "{\"birth_year\":1990,\"gender\":\"female\",\"profile_picture_url\":\"https://res.cloudinary.com/dcqr1595e/image/upload/sample.jpg\",\"phone\":\"+256700000000\"}",
               "options": { "raw": { "language": "json" } }
             },
             "url": {

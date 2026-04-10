@@ -31,6 +31,7 @@ var inverseRelType = map[string]string{
 	"step_child":  "step_parent",
 	"in_law":      "in_law",
 	"spouse":      "spouse",
+	"co_wife":     "co_wife",
 }
 
 type inferredEdge struct {

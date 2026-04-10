@@ -25,6 +25,7 @@ const CreateClanPage      = lazy(() => import('@/features/clanLeader/CreateClanP
 const AddMemberPage          = lazy(() => import('@/features/clanLeader/AddMemberPage'))
 const MemberInterestsPage    = lazy(() => import('@/features/clanLeader/MemberInterestsPage'))
 const ConflictsPage          = lazy(() => import('@/features/clanLeader/ConflictsPage'))
+const MyClanPage             = lazy(() => import('@/features/clanLeader/MyClanPage'))
 const AdminDashboard      = lazy(() => import('@/features/admin/AdminDashboard'))
 const AdminUsers          = lazy(() => import('@/features/admin/AdminUsers'))
 const AdminClanLeaders    = lazy(() => import('@/features/admin/AdminClanLeaders'))
@@ -45,6 +46,7 @@ export const router = createBrowserRouter([
   { path: '/clan-leader/dashboard',   element: <ClanLeaderRoute>{withSuspense(ClanLeaderDashboard)}</ClanLeaderRoute> },
   { path: '/clan-leader/create',      element: <ClanLeaderRoute>{withSuspense(CreateClanPage)}</ClanLeaderRoute> },
   { path: '/clan-leader/members/add',       element: <ClanLeaderRoute>{withSuspense(AddMemberPage)}</ClanLeaderRoute> },
+  { path: '/clan-leader/my-clan',          element: <ClanLeaderRoute>{withSuspense(MyClanPage)}</ClanLeaderRoute> },
   { path: '/clan-leader/member-interests', element: <ClanLeaderRoute>{withSuspense(MemberInterestsPage)}</ClanLeaderRoute> },
   { path: '/clan-leader/conflicts',         element: <ClanLeaderRoute>{withSuspense(ConflictsPage)}</ClanLeaderRoute> },
   { path: '/admin',                   element: <AdminRoute>{withSuspense(AdminDashboard)}</AdminRoute> },

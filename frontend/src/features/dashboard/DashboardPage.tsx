@@ -51,6 +51,10 @@ const DashboardPage = () => {
   const [deleteOpen, setDeleteOpen] = useState(false)
   const [editName, setEditName] = useState('')
   const [editPhone, setEditPhone] = useState('')
+  const [editPicUrl, setEditPicUrl] = useState('')
+  const [editUploading, setEditUploading] = useState(false)
+  const [editDragOver, setEditDragOver] = useState(false)
+  const editFileRef = useRef<HTMLInputElement>(null)
 
   // ── Profile completion modal (shown once on first login if incomplete) ─────
   const [welcomeOpen, setWelcomeOpen] = useState(false)
@@ -79,7 +83,40 @@ const DashboardPage = () => {
   if (!user) return <Spinner fullScreen />
 
   const profileIncomplete = !user.birth_year || !user.gender || !user.phone
-  const openEdit = () => { setEditName(user.full_name); setEditPhone(user.phone ?? ''); setEditOpen(true) }
+  const openEdit = () => {
+    setEditName(user.full_name)
+    setEditPhone(user.phone ?? '')
+    setEditPicUrl(user.profile_picture_url ?? '')
+    setEditDragOver(false)
+    setEditOpen(true)
+  }
+
+  const uploadPhoto = async (file: File) => {
+    if (!file.type.startsWith('image/')) { notify.error('Please select an image file.'); return }
+    setEditUploading(true)
+    try {
+      const fd = new FormData()
+      fd.append('file', file)
+      const res = await apiClient.post<{ url: string }>('/api/v1/upload/photo', fd, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      })
+      setEditPicUrl(res.data.url)
+    } catch { notify.error('Photo upload failed. Please try again.') }
+    finally { setEditUploading(false) }
+  }
+
+  const handleEditFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) void uploadPhoto(file)
+    e.target.value = ''
+  }
+
+  const handleEditDrop = (e: React.DragEvent) => {
+    e.preventDefault()
+    setEditDragOver(false)
+    const file = e.dataTransfer.files?.[0]
+    if (file) void uploadPhoto(file)
+  }
 
   const quickActions = [
     { icon: <TreeIcon />, label: 'Family Tree', desc: 'View your clan tree', onClick: () => navigate('/clan/tree'), isPending: false },
@@ -180,12 +217,101 @@ const DashboardPage = () => {
 
           {/* Edit Modal */}
           <Modal isOpen={editOpen} onClose={() => setEditOpen(false)} title="Edit Profile" size="md">
-            <form onSubmit={(e) => { e.preventDefault(); updateMe.mutate({ full_name: editName, phone: editPhone }, { onSuccess: () => setEditOpen(false) }) }} className="flex flex-col gap-4">
+            <form
+              onSubmit={(e) => {
+                e.preventDefault()
+                updateMe.mutate(
+                  { full_name: editName, phone: editPhone, profile_picture_url: editPicUrl || undefined },
+                  { onSuccess: () => setEditOpen(false) },
+                )
+              }}
+              className="flex flex-col gap-5"
+            >
+              {/* Photo upload */}
+              <div>
+                <p className="text-xs font-merriweather font-semibold uppercase tracking-wider text-gray-500 mb-2">
+                  Profile Photo
+                </p>
+                <input
+                  ref={editFileRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={handleEditFileChange}
+                />
+
+                {editPicUrl ? (
+                  /* Preview state */
+                  <div className="flex items-center gap-4 p-4 border border-gray-100 rounded-2xl bg-gray-50">
+                    <img src={editPicUrl} alt="Preview" className="w-16 h-16 rounded-full object-cover flex-shrink-0 ring-2 ring-primary/20" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-merriweather text-gray-700 font-medium">Photo ready</p>
+                      <div className="flex gap-3 mt-1">
+                        <button
+                          type="button"
+                          onClick={() => editFileRef.current?.click()}
+                          className="text-xs text-primary hover:text-primary/80 font-merriweather transition-colors"
+                        >
+                          Change
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setEditPicUrl('')}
+                          className="text-xs text-red-400 hover:text-red-600 font-merriweather transition-colors"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  /* Drag-and-drop zone */
+                  <div
+                    onDragOver={(e) => { e.preventDefault(); setEditDragOver(true) }}
+                    onDragLeave={() => setEditDragOver(false)}
+                    onDrop={handleEditDrop}
+                    onClick={() => editFileRef.current?.click()}
+                    className={`
+                      w-full border-2 border-dashed rounded-2xl p-6 text-center cursor-pointer
+                      transition-all duration-200 select-none
+                      ${editDragOver
+                        ? 'border-primary bg-primary/5 scale-[1.01]'
+                        : 'border-gray-200 hover:border-primary/60 hover:bg-gray-50'
+                      }
+                    `}
+                  >
+                    {editUploading ? (
+                      <div className="flex flex-col items-center gap-2">
+                        <Spinner size="sm" />
+                        <p className="text-sm text-gray-400 font-merriweather">Uploading…</p>
+                      </div>
+                    ) : (
+                      <>
+                        <div className={`w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3 transition-colors ${editDragOver ? 'bg-primary/15' : 'bg-gray-100'}`}>
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" className={`w-5 h-5 transition-colors ${editDragOver ? 'text-primary' : 'text-gray-400'}`}>
+                            <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
+                            <polyline points="17 8 12 3 7 8"/>
+                            <line x1="12" y1="3" x2="12" y2="15"/>
+                          </svg>
+                        </div>
+                        <p className={`text-sm font-merriweather font-medium transition-colors ${editDragOver ? 'text-primary' : 'text-gray-600'}`}>
+                          {editDragOver ? 'Drop to upload' : 'Drag & drop or click to browse'}
+                        </p>
+                        <p className="text-xs text-gray-400 font-merriweather mt-1">PNG, JPG up to 10 MB</p>
+                      </>
+                    )}
+                  </div>
+                )}
+              </div>
+
               <Input label="Full Name" name="full_name" value={editName} onChange={(e) => setEditName(e.target.value)} required />
               <Input label="Phone Number" name="phone" type="tel" value={editPhone} onChange={(e) => setEditPhone(e.target.value)} />
-              <div className="flex gap-3 justify-end mt-2">
+
+              <div className="flex gap-3 justify-end mt-1">
                 <Button type="button" variant="outline" size="sm" onClick={() => setEditOpen(false)}>Cancel</Button>
-                <Button type="submit" variant="primary" size="sm" isLoading={updateMe.isPending}>Save Changes</Button>
+                <Button type="submit" variant="primary" size="sm" isLoading={updateMe.isPending} disabled={editUploading}>
+                  Save Changes
+                </Button>
               </div>
             </form>
           </Modal>

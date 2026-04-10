@@ -49,6 +49,13 @@ export const exportClanGEDCOM = async (id: string): Promise<Blob> => {
   return res.data as Blob
 }
 
+export const updateRelationshipType = async (
+  id: string,
+  relationship_type: string,
+): Promise<void> => {
+  await apiClient.patch(`/api/v1/relationships/${id}`, { relationship_type })
+}
+
 export const createClan = async (data: { name: string }): Promise<Clan> => {
   const res = await apiClient.post('/api/v1/clan-leader/clans', data)
   return (res.data as { data: Clan }).data

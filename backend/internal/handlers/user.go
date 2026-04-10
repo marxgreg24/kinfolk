@@ -122,15 +122,16 @@ func (h *UserHandler) UpdateMe(c *gin.Context) {
 	}
 
 	var body struct {
-		FullName string `json:"full_name" binding:"required"`
-		Phone    string `json:"phone"`
+		FullName          string `json:"full_name" binding:"required"`
+		Phone             string `json:"phone"`
+		ProfilePictureURL string `json:"profile_picture_url"`
 	}
 	if err := c.ShouldBindJSON(&body); err != nil {
 		errorResponse(c, http.StatusBadRequest, err.Error())
 		return
 	}
 
-	if err := h.userSvc.UpdateProfile(c.Request.Context(), clerkID, body.FullName, body.Phone); err != nil {
+	if err := h.userSvc.UpdateProfile(c.Request.Context(), clerkID, body.FullName, body.Phone, body.ProfilePictureURL); err != nil {
 		errorResponse(c, http.StatusInternalServerError, err.Error())
 		return
 	}

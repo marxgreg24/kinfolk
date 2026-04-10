@@ -83,7 +83,7 @@ The following must be installed and configured before running the project:
 - **Clerk account** (https://clerk.com) — create an application; collect the publishable key (for the frontend) and the secret key (for the backend)
 - **Resend account** (https://resend.com) — collect the API key; verify the domain `kinfolkapp.me` so outbound emails are delivered
 - **Stream Chat account** (https://getstream.io) — create an app; collect the API key and API secret
-- **Cloudinary account** (https://cloudinary.com) — the cloud name is `kinfolk`; create an unsigned upload preset named `kinfolk_unsigned`
+- **Cloudinary account** (https://cloudinary.com) — use your Cloudinary product environment credentials; the current cloud name is `dcqr1595e`
 - **Neon Postgres database** (https://neon.tech) — create a project; collect the pooler connection string (for the app) and the direct connection string without pooling (for migrations)
 
 ## Environment Setup
@@ -99,7 +99,7 @@ The backend reads all configuration from `kinfolk/backend/.env`. Copy `.env.exam
 | `PORT` | Port the HTTP server binds to; default `8081` |
 | `CLERK_SECRET_KEY` | Found in the Clerk dashboard under Backend API keys |
 | `RESEND_API_KEY` | Found in the Resend dashboard |
-| `CLOUDINARY_CLOUD_NAME` | `kinfolk` |
+| `CLOUDINARY_CLOUD_NAME` | `dcqr1595e` |
 | `CLOUDINARY_API_KEY` | Found in the Cloudinary dashboard |
 | `CLOUDINARY_API_SECRET` | Found in the Cloudinary dashboard |
 | `STREAM_API_KEY` | Found in the Stream dashboard for your app |

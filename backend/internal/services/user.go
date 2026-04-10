@@ -90,8 +90,8 @@ func (s *UserService) CompleteProfile(ctx context.Context, clerkUserID string, b
 	return nil
 }
 
-// UpdateProfile updates a user's display name and phone number.
-func (s *UserService) UpdateProfile(ctx context.Context, clerkUserID, fullName, phone string) error {
+// UpdateProfile updates a user's display name, phone number, and optional profile picture.
+func (s *UserService) UpdateProfile(ctx context.Context, clerkUserID, fullName, phone, profilePicURL string) error {
 	user, err := s.repo.GetUserByClerkID(ctx, clerkUserID)
 	if err != nil {
 		return fmt.Errorf("services.UserService.UpdateProfile: %w", err)
@@ -102,6 +102,9 @@ func (s *UserService) UpdateProfile(ctx context.Context, clerkUserID, fullName, 
 
 	user.FullName = fullName
 	user.Phone = &phone
+	if profilePicURL != "" {
+		user.ProfilePictureURL = &profilePicURL
+	}
 
 	if err := s.repo.UpdateUser(ctx, user); err != nil {
 		return fmt.Errorf("services.UserService.UpdateProfile: %w", err)

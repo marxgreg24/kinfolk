@@ -3,6 +3,7 @@ export type RelationshipType =
   | 'uncle' | 'aunt' | 'cousin' | 'second_cousin'
   | 'grandparent' | 'grandchild' | 'nephew' | 'niece'
   | 'in_law' | 'step_parent' | 'step_child' | 'half_sibling'
+  | 'co_wife'
 
 export interface Relationship {
   id: string

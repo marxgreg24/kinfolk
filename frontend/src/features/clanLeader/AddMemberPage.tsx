@@ -33,7 +33,11 @@ const AddMemberPage = () => {
   const { data: clanMembersData, isLoading: membersLoading } = useGetClanMembers(user?.clan_id ?? '')
   const members = clanMembersData?.members ?? []
 
-  const { data: families = [], isLoading: familiesLoading } = useListFamilies()
+  const {
+    data: families = [],
+    isLoading: familiesLoading,
+    error: familiesError,
+  } = useListFamilies(user?.id)
   const { mutate: archiveInterest } = useArchiveClanMemberInterest()
 
   const [form, setForm] = useState({ ...EMPTY_FORM, full_name: prefillName, email: prefillEmail })
@@ -173,6 +177,11 @@ const AddMemberPage = () => {
                         No families yet — click &quot;+ New&quot; to create one first.
                       </p>
                     )}
+                    {familiesError && (
+                      <p className="text-xs text-red-500 font-merriweather mt-1">
+                        Failed to load families. Refresh the page and try again.
+                      </p>
+                    )}
                   </div>
 
                   {/* Relationship selector */}
@@ -269,7 +278,7 @@ const AddMemberPage = () => {
           Give this family a name. You can add more families any time.
         </p>
         <form
-          onSubmit={(e) => { e.preventDefault(); if (newFamilyName.trim()) createFamily({ name: newFamilyName.trim() }) }}
+          onSubmit={(e) => { e.preventDefault(); if (newFamilyName.trim()) createFamily({ name: newFamilyName.trim(), add_leader_as_member: true }) }}
           className="flex flex-col gap-4"
         >
           <Input

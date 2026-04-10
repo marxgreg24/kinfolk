@@ -6,7 +6,11 @@ export const getMe = async (): Promise<User> => {
   return (res.data as { data: User }).data
 }
 
-export const updateMe = async (data: { full_name?: string; phone?: string }): Promise<void> => {
+export const updateMe = async (data: {
+  full_name?: string
+  phone?: string
+  profile_picture_url?: string
+}): Promise<void> => {
   await apiClient.put('/api/v1/users/me', data)
 }
 

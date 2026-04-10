@@ -82,6 +82,36 @@ func (s *RelationshipService) SubmitRelationship(
 	return newRel, true, nil
 }
 
+// UpdateRelationshipType updates the type of a relationship the caller owns.
+// Returns a "not found" error if the relationship doesn't exist or wasn't submitted by the caller.
+func (s *RelationshipService) UpdateRelationshipType(
+	ctx context.Context,
+	fromClerkID, relationshipID, relType string,
+) error {
+	user, err := s.userRepo.GetUserByClerkID(ctx, fromClerkID)
+	if err != nil {
+		return fmt.Errorf("services.RelationshipService.UpdateRelationshipType: resolve user: %w", err)
+	}
+	if user == nil {
+		return fmt.Errorf("services.RelationshipService.UpdateRelationshipType: user not found")
+	}
+
+	rel, err := s.repo.GetRelationshipByID(ctx, relationshipID)
+	if err != nil {
+		return fmt.Errorf("services.RelationshipService.UpdateRelationshipType: %w", err)
+	}
+	if rel == nil || rel.FromUserID != user.ID {
+		return fmt.Errorf("services.RelationshipService.UpdateRelationshipType: not found or not owner")
+	}
+
+	if err := s.repo.UpdateRelationshipType(ctx, relationshipID, relType); err != nil {
+		return err
+	}
+	_ = s.audit.Log(ctx, user.ID, "relationship_type_updated", "relationship", relationshipID,
+		map[string]interface{}{"new_type": relType})
+	return nil
+}
+
 // ListByClan returns all relationships for a clan.
 func (s *RelationshipService) ListByClan(ctx context.Context, clanID string) ([]*models.Relationship, error) {
 	rels, err := s.repo.ListRelationshipsByClan(ctx, clanID)

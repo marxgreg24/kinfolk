@@ -58,6 +58,37 @@ func (h *RelationshipHandler) Submit(c *gin.Context) {
 	c.JSON(http.StatusCreated, gin.H{"data": rel, "conflicted": conflicted})
 }
 
+// UpdateRelationshipType updates the relationship_type of a relationship the caller owns.
+//
+// PATCH /api/v1/relationships/:id
+func (h *RelationshipHandler) UpdateRelationshipType(c *gin.Context) {
+	clerkID, ok := middleware.GetClerkUserID(c)
+	if !ok {
+		errorResponse(c, http.StatusUnauthorized, "unauthenticated")
+		return
+	}
+
+	var body struct {
+		RelationshipType string `json:"relationship_type" binding:"required"`
+	}
+	if err := c.ShouldBindJSON(&body); err != nil {
+		errorResponse(c, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	if err := h.relSvc.UpdateRelationshipType(
+		c.Request.Context(),
+		clerkID,
+		c.Param("id"),
+		body.RelationshipType,
+	); err != nil {
+		errorResponse(c, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "relationship updated"})
+}
+
 // ListByClan returns all relationships for a clan.
 //
 // GET /api/v1/clans/:id/relationships

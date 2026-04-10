@@ -2,10 +2,12 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import notify from '@/utils/toast'
 import { listFamilies, createFamily, listFamilyMembers } from '@/api/families'
 
-export const useListFamilies = () =>
+export const useListFamilies = (scopeKey?: string) =>
   useQuery({
-    queryKey: ['families'],
+    queryKey: ['families', scopeKey],
     queryFn: listFamilies,
+    enabled: !!scopeKey,
+    refetchOnMount: 'always',
   })
 
 export const useCreateFamily = (onCreated?: () => void) => {

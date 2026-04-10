@@ -95,6 +95,11 @@ func (c *Config) IsDevelopment() bool {
 	return c.AppEnv == "development"
 }
 
+// HasCloudinaryConfig reports whether all required Cloudinary credentials are present.
+func (c *Config) HasCloudinaryConfig() bool {
+	return c.CloudinaryCloudName != "" && c.CloudinaryAPIKey != "" && c.CloudinaryAPISecret != ""
+}
+
 // parseOrigins splits a comma-separated origins string into a trimmed slice,
 // discarding any empty entries.
 func parseOrigins(s string) []string {

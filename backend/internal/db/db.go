@@ -21,7 +21,11 @@ func Connect(cfg *config.Config) (*sqlx.DB, error) {
 
 	db.SetMaxOpenConns(25)
 	db.SetMaxIdleConns(5)
-	db.SetConnMaxLifetime(5 * time.Minute)
+	// Keep connections alive for up to 30 minutes. Short lifetimes (e.g. 5 min)
+	// cause Go to close idle connections faster than Neon's pooler notices,
+	// which lets the Neon compute suspend and triggers cold-start timeouts.
+	db.SetConnMaxLifetime(30 * time.Minute)
+	db.SetConnMaxIdleTime(10 * time.Minute)
 
 	if err := db.Ping(); err != nil {
 		return nil, fmt.Errorf("db: failed to ping database: %w", err)

@@ -77,12 +77,34 @@ func (r *MemberRepository) GetMemberByUserID(ctx context.Context, userID string)
 
 func (r *MemberRepository) ListMembersByClan(ctx context.Context, clanID string) ([]*models.Member, error) {
 	var members []*models.Member
-	if err := r.db.SelectContext(ctx, &members,
-		`SELECT * FROM members WHERE clan_id = $1 ORDER BY full_name`, clanID,
+	// Deduplicate by email within the clan: keep the canonical record
+	// (prefer the one with a linked user account, newest as tiebreaker).
+	if err := r.db.SelectContext(ctx, &members, `
+		SELECT * FROM (
+			SELECT DISTINCT ON (LOWER(COALESCE(email, id::text))) *
+			FROM   members
+			WHERE  clan_id = $1
+			ORDER  BY LOWER(COALESCE(email, id::text)),
+			          (user_id IS NOT NULL) DESC,
+			          created_at DESC
+		) deduped
+		ORDER BY full_name`, clanID,
 	); err != nil {
 		return nil, fmt.Errorf("repository.ListMembersByClan: %w", err)
 	}
 	return members, nil
+}
+
+// SetMemberFamilyID assigns (or re-assigns) a member to a family.
+func (r *MemberRepository) SetMemberFamilyID(ctx context.Context, memberID, familyID string) error {
+	_, err := r.db.ExecContext(ctx,
+		`UPDATE members SET family_id = $1, updated_at = NOW() WHERE id = $2`,
+		familyID, memberID,
+	)
+	if err != nil {
+		return fmt.Errorf("repository.SetMemberFamilyID: %w", err)
+	}
+	return nil
 }
 
 func (r *MemberRepository) UpdateMember(ctx context.Context, member *models.Member) error {

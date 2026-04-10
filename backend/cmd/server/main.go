@@ -96,6 +96,19 @@ func main() {
 		}
 	}()
 
+	// Keep the Neon compute warm by pinging the DB every 4 minutes.
+	// Without this, the free-tier compute suspends after ~5 minutes of inactivity
+	// and the first subsequent query times out, returning a 500 to the client.
+	go func() {
+		ticker := time.NewTicker(4 * time.Minute)
+		defer ticker.Stop()
+		for range ticker.C {
+			if err := database.Ping(); err != nil {
+				log.Printf("DB keepalive ping failed: %v", err)
+			}
+		}
+	}()
+
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
