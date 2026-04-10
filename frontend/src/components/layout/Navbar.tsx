@@ -27,7 +27,7 @@ const Navbar = () => {
   const handleSignOut = async () => {
     setDropdownOpen(false)
     await signOut()
-    navigate('/')
+    navigate('/login')
   }
 
   const logoTo = isSignedIn ? '/dashboard' : '/'

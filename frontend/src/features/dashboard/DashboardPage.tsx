@@ -5,7 +5,7 @@ import { useClerk } from '@clerk/clerk-react'
 import notify from '@/utils/toast'
 import type { RootState } from '@/store'
 import { useGetMe, useUpdateMe, useDeleteMe, useCompleteProfile } from '@/hooks/useAuth'
-import { useGetClan, useExportGEDCOM } from '@/hooks/useClan'
+import { useGetClan, useExportGEDCOM, useGetClanMembers } from '@/hooks/useClan'
 import Sidebar from '@/components/layout/Sidebar'
 import Spinner from '@/components/ui/Spinner'
 import Avatar from '@/components/ui/Avatar'
@@ -13,6 +13,7 @@ import Badge from '@/components/ui/Badge'
 import Button from '@/components/ui/Button'
 import Modal from '@/components/ui/Modal'
 import Input from '@/components/ui/Input'
+import ClanMemberList from '@/components/clan/ClanMemberList'
 import apiClient from '@/api/axios'
 
 // ── Icons ─────────────────────────────────────────────────────────────────────
@@ -79,6 +80,7 @@ const DashboardPage = () => {
   const deleteMe = useDeleteMe()
   const exportGEDCOM = useExportGEDCOM()
   const { data: clan } = useGetClan(user?.clan_id ?? '')
+  const { data: clanMembersData, isLoading: membersLoading } = useGetClanMembers(user?.clan_id ?? '')
 
   if (!user) return <Spinner fullScreen />
 
@@ -215,6 +217,16 @@ const DashboardPage = () => {
             </div>
           </div>
 
+          {/* Clan Members List */}
+          {user.clan_id && (
+            <div className="mt-8">
+              <ClanMemberList
+                members={clanMembersData?.members ?? []}
+                isLoading={membersLoading}
+              />
+            </div>
+          )}
+
           {/* Edit Modal */}
           <Modal isOpen={editOpen} onClose={() => setEditOpen(false)} title="Edit Profile" size="md">
             <form
@@ -324,7 +336,7 @@ const DashboardPage = () => {
             <div className="flex gap-3 justify-end">
               <Button variant="outline" size="sm" onClick={() => setDeleteOpen(false)}>Cancel</Button>
               <Button variant="danger" size="sm" isLoading={deleteMe.isPending}
-                onClick={() => deleteMe.mutate(undefined, { onSuccess: async () => { await signOut(); navigate('/') } })}>
+                onClick={() => deleteMe.mutate(undefined, { onSuccess: async () => { await signOut(); navigate('/login') } })}>
                 Delete Account
               </Button>
             </div>

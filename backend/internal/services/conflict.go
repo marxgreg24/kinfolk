@@ -40,24 +40,30 @@ func (s *ConflictService) ResolveConflict(ctx context.Context, conflictID, leade
 	if conflict == nil {
 		return fmt.Errorf("services.ConflictService.ResolveConflict: conflict not found")
 	}
+	if conflict.ResolvedAt != nil {
+		return fmt.Errorf("services.ConflictService.ResolveConflict: conflict already resolved")
+	}
 
 	switch resolution {
 	case "approve_original":
 		if err := s.relationshipRepo.UpdateRelationshipStatus(ctx, conflict.OriginalRelationshipID, "active"); err != nil {
 			return fmt.Errorf("services.ConflictService.ResolveConflict: %w", err)
 		}
-		if err := s.relationshipRepo.UpdateRelationshipStatus(ctx, conflict.ConflictingRelationshipID, "active"); err != nil {
+		if err := s.relationshipRepo.UpdateRelationshipStatus(ctx, conflict.ConflictingRelationshipID, "conflicted"); err != nil {
 			return fmt.Errorf("services.ConflictService.ResolveConflict: %w", err)
 		}
 	case "approve_conflicting":
+		if err := s.relationshipRepo.UpdateRelationshipStatus(ctx, conflict.OriginalRelationshipID, "conflicted"); err != nil {
+			return fmt.Errorf("services.ConflictService.ResolveConflict: %w", err)
+		}
 		if err := s.relationshipRepo.UpdateRelationshipStatus(ctx, conflict.ConflictingRelationshipID, "active"); err != nil {
 			return fmt.Errorf("services.ConflictService.ResolveConflict: %w", err)
 		}
 	case "reject_both":
-		if err := s.relationshipRepo.UpdateRelationshipStatus(ctx, conflict.OriginalRelationshipID, "pending"); err != nil {
+		if err := s.relationshipRepo.UpdateRelationshipStatus(ctx, conflict.OriginalRelationshipID, "conflicted"); err != nil {
 			return fmt.Errorf("services.ConflictService.ResolveConflict: %w", err)
 		}
-		if err := s.relationshipRepo.UpdateRelationshipStatus(ctx, conflict.ConflictingRelationshipID, "pending"); err != nil {
+		if err := s.relationshipRepo.UpdateRelationshipStatus(ctx, conflict.ConflictingRelationshipID, "conflicted"); err != nil {
 			return fmt.Errorf("services.ConflictService.ResolveConflict: %w", err)
 		}
 	}

@@ -57,7 +57,7 @@ const Sidebar = ({ role }: SidebarProps) => {
 
   const handleSignOut = async () => {
     await signOut()
-    navigate('/')
+    navigate('/login')
   }
 
   return (

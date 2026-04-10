@@ -3,9 +3,11 @@ import { RouterProvider } from 'react-router-dom'
 import { Toaster } from 'react-hot-toast'
 import { router } from './router'
 import AuthBootstrap from '@/components/layout/AuthBootstrap'
+import ErrorBoundaryPage from '@/features/ErrorBoundaryPage'
 
 interface ErrorBoundaryState {
   hasError: boolean
+  error?: Error
 }
 
 class ErrorBoundary extends React.Component<
@@ -17,23 +19,17 @@ class ErrorBoundary extends React.Component<
     this.state = { hasError: false }
   }
 
-  static getDerivedStateFromError(): ErrorBoundaryState {
-    return { hasError: true }
+  static getDerivedStateFromError(error: Error): ErrorBoundaryState {
+    return { hasError: true, error }
   }
 
   render() {
     if (this.state.hasError) {
       return (
-        <div className="flex flex-col items-center justify-center min-h-screen bg-white">
-          <h1 className="text-2xl font-bold text-secondary mb-4">Something went wrong</h1>
-          <p className="text-gray-600 mb-6">Please refresh the page or try again later.</p>
-          <button
-            onClick={() => window.location.reload()}
-            className="px-6 py-2 bg-primary text-white rounded hover:bg-secondary transition-colors"
-          >
-            Refresh Page
-          </button>
-        </div>
+        <ErrorBoundaryPage
+          error={this.state.error}
+          onReset={() => this.setState({ hasError: false, error: undefined })}
+        />
       )
     }
     return this.props.children

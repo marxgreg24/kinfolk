@@ -65,7 +65,7 @@ func (h *MemberHandler) AddMember(c *gin.Context) {
 	var body struct {
 		FullName         string  `json:"full_name"          binding:"required"`
 		Email            string  `json:"email"              binding:"required,email"`
-		RelationshipType string  `json:"relationship_type"  binding:"required"`
+		RelationshipType string  `json:"relationship_type"`
 		FamilyID         string  `json:"family_id"          binding:"required"`
 		ProfilePicURL    *string `json:"profile_picture_url"`
 	}
@@ -143,9 +143,12 @@ func (h *MemberHandler) AddMember(c *gin.Context) {
 	}
 
 	// ── 6. Record the clan leader's relationship to this member ──────────────
-	if _, _, err := h.relSvc.SubmitRelationship(ctx, leaderClerkID, memberID, clanID, body.RelationshipType); err != nil {
-		// Non-fatal: member + user already created; log but continue.
-		_ = err
+	// Skip if the leader indicated "not_related" or left the field blank.
+	if body.RelationshipType != "" && body.RelationshipType != "not_related" {
+		if _, _, err := h.relSvc.SubmitRelationship(ctx, leaderClerkID, memberID, clanID, body.RelationshipType); err != nil {
+			// Non-fatal: member + user already created; log but continue.
+			_ = err
+		}
 	}
 
 	// ── 7. Send welcome email with credentials ───────────────────────────────

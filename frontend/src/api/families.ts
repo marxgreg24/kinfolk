@@ -2,6 +2,12 @@ import apiClient from './axios'
 import type { Family } from '@/types/family'
 import type { Member } from '@/types/member'
 
+// Accessible to all authenticated users — used by the family tree page.
+export const getClanFamilies = async (clanId: string): Promise<Family[]> => {
+  const res = await apiClient.get(`/api/v1/clans/${clanId}/families`)
+  return (res.data as { data: Family[] }).data ?? []
+}
+
 export const listFamilies = async (): Promise<Family[]> => {
   const res = await apiClient.get('/api/v1/clan-leader/families')
   return (res.data as { data: Family[] }).data ?? []

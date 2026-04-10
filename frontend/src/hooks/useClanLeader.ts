@@ -4,6 +4,8 @@ import { listConflicts, resolveConflict } from '@/api/conflicts'
 import { listMatchSuggestions, approveMatchSuggestion, rejectMatchSuggestion } from '@/api/matchSuggestions'
 import { addMember } from '@/api/members'
 import { createClan } from '@/api/clans'
+import type { Conflict } from '@/types/conflict'
+import type { Relationship } from '@/types/relationship'
 
 export const useListConflicts = (clanId: string) =>
   useQuery({
@@ -23,10 +25,46 @@ export const useResolveConflict = (clanId: string) => {
       conflictId: string
       resolution: 'approve_original' | 'approve_conflicting' | 'reject_both'
     }) => resolveConflict(conflictId, resolution),
-    onSuccess: () => {
+    onSuccess: (_, variables) => {
+      const currentConflicts = queryClient.getQueryData<Conflict[]>(['conflicts', clanId]) ?? []
+      const resolvedConflict = currentConflicts.find((conflict) => conflict.id === variables.conflictId)
+
+      queryClient.setQueryData<Conflict[]>(['conflicts', clanId], (existing = []) =>
+        existing.filter((conflict) => conflict.id !== variables.conflictId),
+      )
+
+      if (resolvedConflict) {
+        queryClient.setQueryData<Relationship[]>(['clan-relationships', clanId], (existing = []) =>
+          existing.map((relationship) => {
+            if (relationship.id === resolvedConflict.original_relationship_id) {
+              return {
+                ...relationship,
+                status:
+                  variables.resolution === 'approve_original'
+                    ? 'active'
+                    : 'conflicted',
+              }
+            }
+
+            if (relationship.id === resolvedConflict.conflicting_relationship_id) {
+              return {
+                ...relationship,
+                status:
+                  variables.resolution === 'approve_conflicting'
+                    ? 'active'
+                    : 'conflicted',
+              }
+            }
+
+            return relationship
+          }),
+        )
+      }
+
       notify.success('Conflict resolved successfully.')
       void queryClient.invalidateQueries({ queryKey: ['conflicts', clanId] })
       void queryClient.invalidateQueries({ queryKey: ['clan-relationships', clanId] })
+      void queryClient.invalidateQueries({ queryKey: ['clan-tree', clanId] })
     },
     onError: (error: any) => {
       const message = error?.response?.data?.error ?? 'Failed to resolve conflict. Please try again.'

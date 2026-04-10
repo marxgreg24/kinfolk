@@ -1,6 +1,14 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import notify from '@/utils/toast'
-import { listFamilies, createFamily, listFamilyMembers } from '@/api/families'
+import { listFamilies, createFamily, listFamilyMembers, getClanFamilies } from '@/api/families'
+
+export const useGetClanFamilies = (clanId: string) =>
+  useQuery({
+    queryKey: ['clan-families', clanId],
+    queryFn: () => getClanFamilies(clanId),
+    enabled: !!clanId,
+    staleTime: 60_000,
+  })
 
 export const useListFamilies = (scopeKey?: string) =>
   useQuery({

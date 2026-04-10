@@ -192,10 +192,16 @@ const AddMemberPage = () => {
                     <select value={form.relationship_type} onChange={handleChange('relationship_type')}
                       disabled={!user.clan_id} required className={selectCls}>
                       <option value="">Select relationship…</option>
+                      <option value="not_related">— Not Related</option>
                       {RELATIONSHIP_TYPES.map((r) => (
                         <option key={r.value} value={r.value}>{r.label}</option>
                       ))}
                     </select>
+                    {form.relationship_type === 'not_related' && (
+                      <p className="mt-1.5 text-xs text-gray-400 font-merriweather leading-relaxed">
+                        No relationship will be recorded between you and this member.
+                      </p>
+                    )}
                   </div>
 
                   {/* Photo upload */}

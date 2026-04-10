@@ -67,6 +67,7 @@ func SetupRouter(h *Handlers, cfg *config.Config, db *sqlx.DB) *gin.Engine {
 
 	protected.GET("clans/:id", h.Clan.GetByID)
 	protected.GET("clans/:id/members", h.Clan.GetMembers)
+	protected.GET("clans/:id/families", h.Family.ListByClanID)
 	protected.GET("families/:id/members", h.Family.ListFamilyMembers)
 
 	protected.POST("relationships", h.Relationship.Submit)

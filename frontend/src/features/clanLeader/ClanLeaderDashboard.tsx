@@ -7,6 +7,7 @@ import { useListConflicts } from '@/hooks/useClanLeader'
 import Sidebar from '@/components/layout/Sidebar'
 import Spinner from '@/components/ui/Spinner'
 import MatchSuggestionsPanel from './MatchSuggestionsPanel'
+import ClanMemberList from '@/components/clan/ClanMemberList'
 
 const AddMemberIcon = () => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
@@ -36,7 +37,7 @@ const ClanLeaderDashboard = () => {
   useGetMe()
 
   const { data: clan } = useGetClan(user?.clan_id ?? '')
-  const { data: clanMembersData } = useGetClanMembers(user?.clan_id ?? '')
+  const { data: clanMembersData, isLoading: membersLoading } = useGetClanMembers(user?.clan_id ?? '')
   const { data: conflicts } = useListConflicts(user?.clan_id ?? '')
 
   if (!user) return <Spinner fullScreen />
@@ -117,6 +118,15 @@ const ClanLeaderDashboard = () => {
           </div>
 
           <MatchSuggestionsPanel clanId={user?.clan_id ?? ''} />
+
+          {/* Clan Members List */}
+          <div className="mt-8">
+            <ClanMemberList
+              members={clanMembersData?.members ?? []}
+              isLoading={membersLoading}
+              showContact
+            />
+          </div>
         </main>
       </div>
     </div>

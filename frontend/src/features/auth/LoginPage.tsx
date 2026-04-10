@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 import { useSignIn, useAuth, useUser } from '@clerk/clerk-react'
 import { useDispatch } from 'react-redux'
 import type { AppDispatch } from '@/store'
@@ -129,7 +129,9 @@ const LoginPage = () => {
         <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/60 to-black/80" aria-hidden="true" />
         <div className="relative z-10 h-[2px] bg-gradient-to-r from-transparent via-primary to-transparent" />
         <div className="relative z-10 flex flex-col flex-1 p-12 pt-14">
-          <KinfolkWordmark uppercase className="font-merriweather font-bold text-2xl tracking-[0.15em] text-white" />
+          <Link to="/" className="hover:opacity-80 transition-opacity">
+            <KinfolkWordmark uppercase className="font-merriweather font-bold text-2xl tracking-[0.15em] text-white" />
+          </Link>
           <p className="text-[9px] font-merriweather tracking-[0.35em] text-primary/70 uppercase mt-1">
             Preserve Your Roots
           </p>
@@ -172,7 +174,9 @@ const LoginPage = () => {
         <div className="w-full max-w-[400px]">
           {/* Mobile logo */}
           <div className="lg:hidden mb-8">
-            <KinfolkWordmark uppercase className="font-merriweather font-bold text-2xl tracking-[0.12em] text-gray-900" />
+            <Link to="/" className="hover:opacity-80 transition-opacity">
+              <KinfolkWordmark uppercase className="font-merriweather font-bold text-2xl tracking-[0.12em] text-gray-900" />
+            </Link>
           </div>
 
           <h1 className="font-merriweather font-bold text-2xl text-gray-900 mb-1">Welcome back</h1>

@@ -115,6 +115,20 @@ func (h *FamilyHandler) CreateFamily(c *gin.Context) {
 	createdResponse(c, family)
 }
 
+// ListByClanID returns all families for a given clan.
+// Accessible to any authenticated user (not just clan leaders) so the
+// family tree page can display family names for general users too.
+//
+// GET /api/v1/clans/:id/families
+func (h *FamilyHandler) ListByClanID(c *gin.Context) {
+	families, err := h.familyRepo.ListFamiliesByClan(c.Request.Context(), c.Param("id"))
+	if err != nil {
+		errorResponse(c, http.StatusInternalServerError, err.Error())
+		return
+	}
+	successResponse(c, families)
+}
+
 // ListFamilyMembers returns all members belonging to a specific family.
 //
 // GET /api/v1/families/:id/members

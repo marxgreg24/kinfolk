@@ -48,7 +48,7 @@ func (r *ConflictRepository) GetConflictByID(ctx context.Context, id string) (*m
 func (r *ConflictRepository) ListConflictsByClan(ctx context.Context, clanID string) ([]*models.Conflict, error) {
 	var conflicts []*models.Conflict
 	if err := r.db.SelectContext(ctx, &conflicts,
-		`SELECT * FROM conflicts WHERE clan_id = $1 ORDER BY created_at DESC`, clanID,
+		`SELECT * FROM conflicts WHERE clan_id = $1 AND resolved_at IS NULL ORDER BY created_at DESC`, clanID,
 	); err != nil {
 		return nil, fmt.Errorf("repository.ListConflictsByClan: %w", err)
 	}

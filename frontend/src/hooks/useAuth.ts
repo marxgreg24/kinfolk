@@ -68,7 +68,7 @@ export const useDeleteMe = () => {
       dispatch(clearUser())
       notify.success('Your account has been deleted.')
       await signOut()
-      navigate('/')
+      navigate('/login')
     },
     onError: () => {
       notify.error('Failed to delete account. Please try again.')
