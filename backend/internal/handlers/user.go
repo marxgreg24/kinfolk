@@ -2,6 +2,7 @@
 package handlers
 
 import (
+	"errors"
 	"log"
 	"net/http"
 	"strings"
@@ -38,6 +39,10 @@ func (h *UserHandler) GetMe(c *gin.Context) {
 
 	user, err := h.ensureCurrentUser(c, clerkID)
 	if err != nil {
+		if errors.Is(err, services.ErrDeletedUser) {
+			errorResponse(c, http.StatusForbidden, "account has been deleted")
+			return
+		}
 		errorResponse(c, http.StatusInternalServerError, err.Error())
 		return
 	}

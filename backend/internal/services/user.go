@@ -4,12 +4,15 @@ package services
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/google/uuid"
 	"github.com/kinfolk/backend/internal/models"
 	"github.com/kinfolk/backend/internal/repository"
 )
+
+var ErrDeletedUser = errors.New("user account has been deleted")
 
 type UserService struct {
 	repo       *repository.UserRepository
@@ -31,6 +34,14 @@ func (s *UserService) SyncUser(ctx context.Context, clerkUserID, email, fullName
 		return existing, nil
 	}
 
+	deletedByClerkID, err := s.repo.GetUserByClerkIDIncludeDeleted(ctx, clerkUserID)
+	if err != nil {
+		return nil, fmt.Errorf("services.UserService.SyncUser: %w", err)
+	}
+	if deletedByClerkID != nil && deletedByClerkID.DeletedAt != nil {
+		return nil, ErrDeletedUser
+	}
+
 	// 2. Admin may have pre-created the account (clan leader). Claim it.
 	byEmail, err := s.repo.GetUserByEmail(ctx, email)
 	if err != nil {
@@ -42,6 +53,14 @@ func (s *UserService) SyncUser(ctx context.Context, clerkUserID, email, fullName
 		}
 		byEmail.ClerkUserID = clerkUserID
 		return byEmail, nil
+	}
+
+	deletedByEmail, err := s.repo.GetUserByEmailIncludeDeleted(ctx, email)
+	if err != nil {
+		return nil, fmt.Errorf("services.UserService.SyncUser: %w", err)
+	}
+	if deletedByEmail != nil && deletedByEmail.DeletedAt != nil {
+		return nil, ErrDeletedUser
 	}
 
 	// 3. Brand-new user — create a fresh record.

@@ -60,6 +60,20 @@ func (r *UserRepository) GetUserByEmail(ctx context.Context, email string) (*mod
 	return &u, nil
 }
 
+// GetUserByEmailIncludeDeleted returns a user by email even if soft-deleted.
+// Used to detect deleted accounts before attempting to recreate them.
+func (r *UserRepository) GetUserByEmailIncludeDeleted(ctx context.Context, email string) (*models.User, error) {
+	var u models.User
+	err := r.db.GetContext(ctx, &u, `SELECT * FROM users WHERE email = $1`, email)
+	if err == sql.ErrNoRows {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, fmt.Errorf("repository.GetUserByEmailIncludeDeleted: %w", err)
+	}
+	return &u, nil
+}
+
 func (r *UserRepository) UpdateClerkID(ctx context.Context, userID, clerkUserID string) error {
 	_, err := r.db.ExecContext(ctx,
 		`UPDATE users SET clerk_user_id = $1, updated_at = NOW() WHERE id = $2`,
