@@ -20,6 +20,8 @@ import (
 	"github.com/kinfolk/backend/internal/repository"
 	"github.com/kinfolk/backend/internal/router"
 	"github.com/kinfolk/backend/internal/services"
+	"github.com/kinfolk/backend/migrations"
+	"github.com/pressly/goose/v3"
 )
 
 func main() {
@@ -33,6 +35,10 @@ func main() {
 		log.Fatalf("failed to connect to database: %v", err)
 	}
 	defer database.Close()
+
+	if err := runMigrations(database); err != nil {
+		log.Fatalf("failed to run migrations: %v", err)
+	}
 
 	if err := seedAdmin(database, cfg); err != nil {
 		log.Fatalf("failed to seed admin user: %v", err)
@@ -123,6 +129,20 @@ func main() {
 	}
 
 	log.Println("server exited cleanly")
+}
+
+// runMigrations applies any pending goose migrations using the embedded SQL files.
+func runMigrations(database *sqlx.DB) error {
+	goose.SetBaseFS(migrations.FS)
+	goose.SetLogger(goose.NopLogger())
+	if err := goose.SetDialect("postgres"); err != nil {
+		return fmt.Errorf("runMigrations: set dialect: %w", err)
+	}
+	if err := goose.Up(database.DB, "."); err != nil {
+		return fmt.Errorf("runMigrations: %w", err)
+	}
+	log.Println("database migrations up to date")
+	return nil
 }
 
 // seedAdmin inserts the admin user if it does not already exist.

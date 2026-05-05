@@ -77,27 +77,42 @@ func (r *MemberRepository) GetMemberByUserID(ctx context.Context, userID string)
 
 func (r *MemberRepository) ListMembersByClan(ctx context.Context, clanID string) ([]*models.Member, error) {
 	var members []*models.Member
-	// Deduplicate by email within the clan: keep the canonical record
-	// (prefer the one with a linked user account, newest as tiebreaker).
-	// Exclude members whose linked user has been soft-deleted.
-	// Also join users to surface the linked user's phone number.
+	// Two-pass deduplication:
+	// Pass 1 — dedup by email: within the same clan+email, keep the row that
+	//   has a linked user account (user_id IS NOT NULL), newest as tiebreaker.
+	// Pass 2 — dedup by user_id: a single user can end up with two member rows
+	//   when the clan leader pre-created them without an email and LinkMemberOnJoin
+	//   later created a second row with the user's email. Keep the linked row.
+	// Finally, exclude members whose linked user has been soft-deleted, and join
+	// users to surface the linked user's phone number.
 	if err := r.db.SelectContext(ctx, &members, `
-		SELECT
-			deduped.id, deduped.clan_id, deduped.family_id, deduped.full_name,
-			deduped.email, deduped.profile_picture_url, deduped.user_id,
-			deduped.invited_by, deduped.created_at, deduped.updated_at,
-			u.phone
-		FROM (
-			SELECT DISTINCT ON (LOWER(COALESCE(email, id::text))) *
+		WITH by_email AS (
+			SELECT DISTINCT ON (LOWER(COALESCE(email, id::text)))
+				id, clan_id, family_id, full_name, email, profile_picture_url,
+				user_id, invited_by, created_at, updated_at
 			FROM   members
 			WHERE  clan_id = $1
 			ORDER  BY LOWER(COALESCE(email, id::text)),
 			          (user_id IS NOT NULL) DESC,
 			          created_at DESC
-		) deduped
-		LEFT JOIN users u ON u.id = deduped.user_id AND u.deleted_at IS NULL
-		WHERE (deduped.user_id IS NULL OR u.id IS NOT NULL)
-		ORDER BY deduped.full_name`, clanID,
+		),
+		by_user AS (
+			SELECT DISTINCT ON (COALESCE(user_id::text, id::text))
+				*
+			FROM   by_email
+			ORDER  BY COALESCE(user_id::text, id::text),
+			          (user_id IS NOT NULL) DESC,
+			          created_at DESC
+		)
+		SELECT
+			b.id, b.clan_id, b.family_id, b.full_name,
+			b.email, b.profile_picture_url, b.user_id,
+			b.invited_by, b.created_at, b.updated_at,
+			u.phone
+		FROM   by_user b
+		LEFT   JOIN users u ON u.id = b.user_id AND u.deleted_at IS NULL
+		WHERE  (b.user_id IS NULL OR u.id IS NOT NULL)
+		ORDER  BY b.full_name`, clanID,
 	); err != nil {
 		return nil, fmt.Errorf("repository.ListMembersByClan: %w", err)
 	}
