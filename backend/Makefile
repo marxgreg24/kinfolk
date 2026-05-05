@@ -4,16 +4,13 @@ dev:
 	docker-compose up
 
 migrate-up:
-	@export $(shell grep DATABASE_DIRECT_URL .env | xargs) && \
-	goose postgres "$$DATABASE_DIRECT_URL" up -dir ./migrations
+	@bash -c 'set -a && . ./.env && set +a && goose postgres "$$DATABASE_DIRECT_URL" up -dir ./migrations'
 
 migrate-down:
-	@export $(shell grep DATABASE_DIRECT_URL .env | xargs) && \
-	goose postgres "$$DATABASE_DIRECT_URL" down -dir ./migrations
+	@bash -c 'set -a && . ./.env && set +a && goose postgres "$$DATABASE_DIRECT_URL" down -dir ./migrations'
 
 migrate-status:
-	@export $(shell grep DATABASE_DIRECT_URL .env | xargs) && \
-	goose postgres "$$DATABASE_DIRECT_URL" status -dir ./migrations
+	@bash -c 'set -a && . ./.env && set +a && goose postgres "$$DATABASE_DIRECT_URL" status -dir ./migrations'
 
 migrate-profile-photos:
 	go run ./cmd/migrate-profile-photos
