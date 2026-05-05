@@ -41,6 +41,8 @@ const DownloadIcon = () => (
   </svg>
 )
 
+type Tab = 'overview' | 'settings'
+
 const DashboardPage = () => {
   const navigate = useNavigate()
   const { signOut } = useClerk()
@@ -48,14 +50,16 @@ const DashboardPage = () => {
 
   useGetMe()
 
-  const [editOpen, setEditOpen] = useState(false)
-  const [deleteOpen, setDeleteOpen] = useState(false)
+  const [activeTab, setActiveTab] = useState<Tab>('overview')
+
+  // ── Edit profile state ─────────────────────────────────────────────────────
   const [editName, setEditName] = useState('')
   const [editPhone, setEditPhone] = useState('')
   const [editPicUrl, setEditPicUrl] = useState('')
   const [editUploading, setEditUploading] = useState(false)
   const [editDragOver, setEditDragOver] = useState(false)
   const editFileRef = useRef<HTMLInputElement>(null)
+  const [deleteOpen, setDeleteOpen] = useState(false)
 
   // ── Profile completion modal (shown once on first login if incomplete) ─────
   const [welcomeOpen, setWelcomeOpen] = useState(false)
@@ -76,6 +80,15 @@ const DashboardPage = () => {
     setWelcomeOpen(true)
   }, [user?.id, shownWelcomeKey])
 
+  // Seed edit form whenever user data loads or tab switches to Settings
+  useEffect(() => {
+    if (!user || activeTab !== 'settings') return
+    setEditName(user.full_name)
+    setEditPhone(user.phone ?? '')
+    setEditPicUrl(user.profile_picture_url ?? '')
+    setEditDragOver(false)
+  }, [user?.id, activeTab])
+
   const updateMe = useUpdateMe()
   const deleteMe = useDeleteMe()
   const exportGEDCOM = useExportGEDCOM()
@@ -85,13 +98,6 @@ const DashboardPage = () => {
   if (!user) return <Spinner fullScreen />
 
   const profileIncomplete = !user.birth_year || !user.gender || !user.phone
-  const openEdit = () => {
-    setEditName(user.full_name)
-    setEditPhone(user.phone ?? '')
-    setEditPicUrl(user.profile_picture_url ?? '')
-    setEditDragOver(false)
-    setEditOpen(true)
-  }
 
   const uploadPhoto = async (file: File) => {
     if (!file.type.startsWith('image/')) { notify.error('Please select an image file.'); return }
@@ -134,201 +140,244 @@ const DashboardPage = () => {
     },
   ]
 
+  const tabs: { id: Tab; label: string }[] = [
+    { id: 'overview', label: 'Overview' },
+    { id: 'settings', label: 'Settings' },
+  ]
+
   return (
     <div className="flex min-h-screen" style={{ background: '#fafaf8' }}>
       <Sidebar role={user.role} />
-      <div className="flex-1 flex flex-col ml-64">
-        <main className="flex-1 p-8">
+      <div className="flex-1 flex flex-col md:ml-64">
+        <main className="flex-1 p-4 sm:p-8">
 
           {/* Header */}
-          <div className="mb-7">
-
+          <div className="mb-6 pt-10 md:pt-0">
             <h1 className="text-2xl font-bold text-gray-900 font-merriweather">
               Welcome back, <span className="text-primary">{user.full_name.split(' ')[0]}</span>
             </h1>
             {clan && <p className="text-gray-400 text-sm mt-1 font-merriweather">{clan.name} Clan</p>}
           </div>
 
-          {/* Profile incomplete banner */}
-          {profileIncomplete && (
-            <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 mb-6 flex items-center justify-between gap-4">
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center flex-shrink-0">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="#D97706" strokeWidth={2} className="w-4 h-4">
-                    <path d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
-                </div>
-                <p className="text-sm text-amber-800 font-merriweather">Your profile is incomplete — add your birth year, gender and phone number.</p>
-              </div>
-              <Button variant="outline" size="sm" onClick={() => navigate('/complete-profile')} className="flex-shrink-0">
-                Complete Profile
-              </Button>
-            </div>
-          )}
-
-          {/* Quick action cards */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-            {quickActions.map((action) => (
+          {/* Tab navigation */}
+          <div className="flex gap-1 mb-7 border-b border-gray-100">
+            {tabs.map((tab) => (
               <button
-                key={action.label}
-                onClick={action.onClick}
-                disabled={action.isPending}
-                className="bg-white border border-gray-100 rounded-2xl p-5 text-left hover:shadow-md hover:border-primary/30 transition-all duration-200 group disabled:opacity-60 disabled:cursor-not-allowed"
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`px-4 py-2.5 text-sm font-merriweather font-medium rounded-t-lg transition-all duration-150 -mb-px border-b-2 ${
+                  activeTab === tab.id
+                    ? 'text-primary border-primary bg-primary/5'
+                    : 'text-gray-400 border-transparent hover:text-gray-700 hover:bg-gray-50'
+                }`}
               >
-                <div className="w-10 h-10 rounded-xl bg-primary/10 group-hover:bg-primary/15 flex items-center justify-center text-primary mb-3 transition-colors">
-                  {action.isPending ? <Spinner size="sm" /> : action.icon}
-                </div>
-                <p className="text-sm font-semibold text-gray-800 font-merriweather">{action.label}</p>
-                <p className="text-xs text-gray-400 font-merriweather mt-0.5">{action.desc}</p>
+                {tab.label}
               </button>
             ))}
           </div>
 
-          {/* Profile card */}
-          <div className="bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm">
-            <div className="h-[3px] bg-gradient-to-r from-transparent via-primary/40 to-transparent" />
-            <div className="p-6 flex items-center gap-5">
-              <Avatar src={user.profile_picture_url} name={user.full_name} size="lg" />
-              <div className="flex-1 min-w-0">
-                <p className="font-bold text-gray-900 font-merriweather text-lg leading-tight">{user.full_name}</p>
-                <p className="text-sm text-gray-400 font-merriweather mt-0.5">{user.email}</p>
-                <div className="flex items-center gap-2 mt-2">
-                  <Badge status={user.role} label={user.role.replace('_', ' ')} />
-                  {clan && <span className="text-xs text-gray-400 font-merriweather">{clan.name}</span>}
+          {/* ── OVERVIEW TAB ── */}
+          {activeTab === 'overview' && (
+            <>
+              {/* Profile incomplete banner */}
+              {profileIncomplete && (
+                <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 mb-6 flex items-center justify-between gap-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center flex-shrink-0">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="#D97706" strokeWidth={2} className="w-4 h-4">
+                        <path d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                    </div>
+                    <p className="text-sm text-amber-800 font-merriweather">Your profile is incomplete — add your birth year, gender and phone number.</p>
+                  </div>
+                  <Button variant="outline" size="sm" onClick={() => navigate('/complete-profile')} className="flex-shrink-0">
+                    Complete Profile
+                  </Button>
                 </div>
-              </div>
-              <div className="flex flex-col gap-2">
-                <Button variant="outline" size="sm" onClick={openEdit}>Edit Profile</Button>
-                <Button variant="danger" size="sm" onClick={() => setDeleteOpen(true)}>Delete Account</Button>
-              </div>
-            </div>
-            {/* Info grid */}
-            <div className="border-t border-gray-50 grid grid-cols-3 divide-x divide-gray-50">
-              {[
-                { label: 'Birth Year', value: user.birth_year ?? '—' },
-                { label: 'Gender', value: user.gender ? user.gender.charAt(0).toUpperCase() + user.gender.slice(1) : '—' },
-                { label: 'Phone', value: user.phone ?? '—' },
-              ].map((item) => (
-                <div key={item.label} className="px-6 py-4">
-                  <p className="text-[10px] font-merriweather uppercase tracking-widest text-gray-400 mb-0.5">{item.label}</p>
-                  <p className="text-sm font-merriweather text-gray-700 font-medium">{item.value}</p>
-                </div>
-              ))}
-            </div>
-          </div>
+              )}
 
-          {/* Clan Members List */}
-          {user.clan_id && (
-            <div className="mt-8">
-              <ClanMemberList
-                members={clanMembersData?.members ?? []}
-                isLoading={membersLoading}
-              />
+              {/* Quick action cards */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+                {quickActions.map((action) => (
+                  <button
+                    key={action.label}
+                    onClick={action.onClick}
+                    disabled={action.isPending}
+                    className="bg-white border border-gray-100 rounded-2xl p-5 text-left hover:shadow-md hover:border-primary/30 transition-all duration-200 group disabled:opacity-60 disabled:cursor-not-allowed"
+                  >
+                    <div className="w-10 h-10 rounded-xl bg-primary/10 group-hover:bg-primary/15 flex items-center justify-center text-primary mb-3 transition-colors">
+                      {action.isPending ? <Spinner size="sm" /> : action.icon}
+                    </div>
+                    <p className="text-sm font-semibold text-gray-800 font-merriweather">{action.label}</p>
+                    <p className="text-xs text-gray-400 font-merriweather mt-0.5">{action.desc}</p>
+                  </button>
+                ))}
+              </div>
+
+              {/* Profile card */}
+              <div className="bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm">
+                <div className="h-[3px] bg-gradient-to-r from-transparent via-primary/40 to-transparent" />
+                <div className="p-6 flex items-center gap-5">
+                  <Avatar src={user.profile_picture_url} name={user.full_name} size="lg" />
+                  <div className="flex-1 min-w-0">
+                    <p className="font-bold text-gray-900 font-merriweather text-lg leading-tight">{user.full_name}</p>
+                    <p className="text-sm text-gray-400 font-merriweather mt-0.5">{user.email}</p>
+                    <div className="flex items-center gap-2 mt-2">
+                      <Badge status={user.role} label={user.role.replace('_', ' ')} />
+                      {clan && <span className="text-xs text-gray-400 font-merriweather">{clan.name}</span>}
+                    </div>
+                  </div>
+                </div>
+                {/* Info grid */}
+                <div className="border-t border-gray-50 grid grid-cols-3 divide-x divide-gray-50">
+                  {[
+                    { label: 'Birth Year', value: user.birth_year ?? '—' },
+                    { label: 'Gender', value: user.gender ? user.gender.charAt(0).toUpperCase() + user.gender.slice(1) : '—' },
+                    { label: 'Phone', value: user.phone ?? '—' },
+                  ].map((item) => (
+                    <div key={item.label} className="px-6 py-4">
+                      <p className="text-[10px] font-merriweather uppercase tracking-widest text-gray-400 mb-0.5">{item.label}</p>
+                      <p className="text-sm font-merriweather text-gray-700 font-medium">{item.value}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Clan Members List */}
+              {user.clan_id && (
+                <div className="mt-8">
+                  <ClanMemberList
+                    members={clanMembersData?.members ?? []}
+                    isLoading={membersLoading}
+                  />
+                </div>
+              )}
+            </>
+          )}
+
+          {/* ── SETTINGS TAB ── */}
+          {activeTab === 'settings' && (
+            <div className="max-w-xl flex flex-col gap-6">
+
+              {/* Edit Profile card */}
+              <div className="bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm">
+                <div className="h-[3px] bg-gradient-to-r from-transparent via-primary/40 to-transparent" />
+                <div className="p-6">
+                  <h2 className="text-sm font-bold font-merriweather text-gray-900 mb-5">Edit Profile</h2>
+                  <form
+                    onSubmit={(e) => {
+                      e.preventDefault()
+                      updateMe.mutate(
+                        { full_name: editName, phone: editPhone, profile_picture_url: editPicUrl || undefined },
+                        { onSuccess: () => notify.success('Profile updated successfully.') },
+                      )
+                    }}
+                    className="flex flex-col gap-5"
+                  >
+                    {/* Photo upload */}
+                    <div>
+                      <p className="text-xs font-merriweather font-semibold uppercase tracking-wider text-gray-500 mb-2">
+                        Profile Photo
+                      </p>
+                      <input
+                        ref={editFileRef}
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={handleEditFileChange}
+                      />
+
+                      {editPicUrl ? (
+                        <div className="flex items-center gap-4 p-4 border border-gray-100 rounded-2xl bg-gray-50">
+                          <img src={editPicUrl} alt="Preview" className="w-16 h-16 rounded-full object-cover flex-shrink-0 ring-2 ring-primary/20" />
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-merriweather text-gray-700 font-medium">Photo ready</p>
+                            <div className="flex gap-3 mt-1">
+                              <button
+                                type="button"
+                                onClick={() => editFileRef.current?.click()}
+                                className="text-xs text-primary hover:text-primary/80 font-merriweather transition-colors"
+                              >
+                                Change
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setEditPicUrl('')}
+                                className="text-xs text-red-400 hover:text-red-600 font-merriweather transition-colors"
+                              >
+                                Remove
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      ) : (
+                        <div
+                          onDragOver={(e) => { e.preventDefault(); setEditDragOver(true) }}
+                          onDragLeave={() => setEditDragOver(false)}
+                          onDrop={handleEditDrop}
+                          onClick={() => editFileRef.current?.click()}
+                          className={`
+                            w-full border-2 border-dashed rounded-2xl p-6 text-center cursor-pointer
+                            transition-all duration-200 select-none
+                            ${editDragOver
+                              ? 'border-primary bg-primary/5 scale-[1.01]'
+                              : 'border-gray-200 hover:border-primary/60 hover:bg-gray-50'
+                            }
+                          `}
+                        >
+                          {editUploading ? (
+                            <div className="flex flex-col items-center gap-2">
+                              <Spinner size="sm" />
+                              <p className="text-sm text-gray-400 font-merriweather">Uploading…</p>
+                            </div>
+                          ) : (
+                            <>
+                              <div className={`w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3 transition-colors ${editDragOver ? 'bg-primary/15' : 'bg-gray-100'}`}>
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" className={`w-5 h-5 transition-colors ${editDragOver ? 'text-primary' : 'text-gray-400'}`}>
+                                  <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
+                                  <polyline points="17 8 12 3 7 8"/>
+                                  <line x1="12" y1="3" x2="12" y2="15"/>
+                                </svg>
+                              </div>
+                              <p className={`text-sm font-merriweather font-medium transition-colors ${editDragOver ? 'text-primary' : 'text-gray-600'}`}>
+                                {editDragOver ? 'Drop to upload' : 'Drag & drop or click to browse'}
+                              </p>
+                              <p className="text-xs text-gray-400 font-merriweather mt-1">PNG, JPG up to 10 MB</p>
+                            </>
+                          )}
+                        </div>
+                      )}
+                    </div>
+
+                    <Input label="Full Name" name="full_name" value={editName} onChange={(e) => setEditName(e.target.value)} required />
+                    <Input label="Phone Number" name="phone" type="tel" value={editPhone} onChange={(e) => setEditPhone(e.target.value)} />
+
+                    <div className="flex gap-3 justify-end mt-1">
+                      <Button type="submit" variant="primary" size="sm" isLoading={updateMe.isPending} disabled={editUploading}>
+                        Save Changes
+                      </Button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+
+              {/* Danger zone — Delete Account */}
+              <div className="bg-white border border-red-100 rounded-2xl overflow-hidden shadow-sm">
+                <div className="h-[3px] bg-gradient-to-r from-transparent via-red-300/60 to-transparent" />
+                <div className="p-6">
+                  <h2 className="text-sm font-bold font-merriweather text-gray-900 mb-1">Delete Account</h2>
+                  <p className="text-xs text-gray-400 font-merriweather mb-5 leading-relaxed">
+                    Permanently remove your account and all associated data. This cannot be undone.
+                  </p>
+                  <Button variant="danger" size="sm" onClick={() => setDeleteOpen(true)}>
+                    Delete My Account
+                  </Button>
+                </div>
+              </div>
             </div>
           )}
 
-          {/* Edit Modal */}
-          <Modal isOpen={editOpen} onClose={() => setEditOpen(false)} title="Edit Profile" size="md">
-            <form
-              onSubmit={(e) => {
-                e.preventDefault()
-                updateMe.mutate(
-                  { full_name: editName, phone: editPhone, profile_picture_url: editPicUrl || undefined },
-                  { onSuccess: () => setEditOpen(false) },
-                )
-              }}
-              className="flex flex-col gap-5"
-            >
-              {/* Photo upload */}
-              <div>
-                <p className="text-xs font-merriweather font-semibold uppercase tracking-wider text-gray-500 mb-2">
-                  Profile Photo
-                </p>
-                <input
-                  ref={editFileRef}
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={handleEditFileChange}
-                />
-
-                {editPicUrl ? (
-                  /* Preview state */
-                  <div className="flex items-center gap-4 p-4 border border-gray-100 rounded-2xl bg-gray-50">
-                    <img src={editPicUrl} alt="Preview" className="w-16 h-16 rounded-full object-cover flex-shrink-0 ring-2 ring-primary/20" />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-merriweather text-gray-700 font-medium">Photo ready</p>
-                      <div className="flex gap-3 mt-1">
-                        <button
-                          type="button"
-                          onClick={() => editFileRef.current?.click()}
-                          className="text-xs text-primary hover:text-primary/80 font-merriweather transition-colors"
-                        >
-                          Change
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setEditPicUrl('')}
-                          className="text-xs text-red-400 hover:text-red-600 font-merriweather transition-colors"
-                        >
-                          Remove
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                ) : (
-                  /* Drag-and-drop zone */
-                  <div
-                    onDragOver={(e) => { e.preventDefault(); setEditDragOver(true) }}
-                    onDragLeave={() => setEditDragOver(false)}
-                    onDrop={handleEditDrop}
-                    onClick={() => editFileRef.current?.click()}
-                    className={`
-                      w-full border-2 border-dashed rounded-2xl p-6 text-center cursor-pointer
-                      transition-all duration-200 select-none
-                      ${editDragOver
-                        ? 'border-primary bg-primary/5 scale-[1.01]'
-                        : 'border-gray-200 hover:border-primary/60 hover:bg-gray-50'
-                      }
-                    `}
-                  >
-                    {editUploading ? (
-                      <div className="flex flex-col items-center gap-2">
-                        <Spinner size="sm" />
-                        <p className="text-sm text-gray-400 font-merriweather">Uploading…</p>
-                      </div>
-                    ) : (
-                      <>
-                        <div className={`w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3 transition-colors ${editDragOver ? 'bg-primary/15' : 'bg-gray-100'}`}>
-                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" className={`w-5 h-5 transition-colors ${editDragOver ? 'text-primary' : 'text-gray-400'}`}>
-                            <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
-                            <polyline points="17 8 12 3 7 8"/>
-                            <line x1="12" y1="3" x2="12" y2="15"/>
-                          </svg>
-                        </div>
-                        <p className={`text-sm font-merriweather font-medium transition-colors ${editDragOver ? 'text-primary' : 'text-gray-600'}`}>
-                          {editDragOver ? 'Drop to upload' : 'Drag & drop or click to browse'}
-                        </p>
-                        <p className="text-xs text-gray-400 font-merriweather mt-1">PNG, JPG up to 10 MB</p>
-                      </>
-                    )}
-                  </div>
-                )}
-              </div>
-
-              <Input label="Full Name" name="full_name" value={editName} onChange={(e) => setEditName(e.target.value)} required />
-              <Input label="Phone Number" name="phone" type="tel" value={editPhone} onChange={(e) => setEditPhone(e.target.value)} />
-
-              <div className="flex gap-3 justify-end mt-1">
-                <Button type="button" variant="outline" size="sm" onClick={() => setEditOpen(false)}>Cancel</Button>
-                <Button type="submit" variant="primary" size="sm" isLoading={updateMe.isPending} disabled={editUploading}>
-                  Save Changes
-                </Button>
-              </div>
-            </form>
-          </Modal>
-
-          {/* Delete Modal */}
+          {/* Delete Confirmation Modal */}
           <Modal isOpen={deleteOpen} onClose={() => setDeleteOpen(false)} title="Delete Account" size="sm">
             <p className="text-sm text-gray-600 font-merriweather mb-6 leading-relaxed">
               Are you sure you want to permanently delete your account? This action cannot be undone.

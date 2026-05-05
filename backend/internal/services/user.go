@@ -12,9 +12,10 @@ import (
 )
 
 type UserService struct {
-	repo     *repository.UserRepository
-	clanRepo *repository.ClanRepository
-	audit    *AuditService
+	repo       *repository.UserRepository
+	clanRepo   *repository.ClanRepository
+	memberRepo *repository.MemberRepository
+	audit      *AuditService
 }
 
 // SyncUser upserts a user record on Clerk sign-in. Idempotent.
@@ -87,6 +88,15 @@ func (s *UserService) CompleteProfile(ctx context.Context, clerkUserID string, b
 	if err := s.repo.UpdateUser(ctx, user); err != nil {
 		return fmt.Errorf("services.UserService.CompleteProfile: %w", err)
 	}
+
+	// Sync profile picture to the linked member record.
+	if profilePicURL != "" {
+		if member, _ := s.memberRepo.GetMemberByUserID(ctx, user.ID); member != nil {
+			member.ProfilePictureURL = &profilePicURL
+			_ = s.memberRepo.UpdateMember(ctx, member)
+		}
+	}
+
 	return nil
 }
 
@@ -109,6 +119,16 @@ func (s *UserService) UpdateProfile(ctx context.Context, clerkUserID, fullName, 
 	if err := s.repo.UpdateUser(ctx, user); err != nil {
 		return fmt.Errorf("services.UserService.UpdateProfile: %w", err)
 	}
+
+	// Sync name and profile picture to the linked member record.
+	if member, _ := s.memberRepo.GetMemberByUserID(ctx, user.ID); member != nil {
+		member.FullName = fullName
+		if profilePicURL != "" {
+			member.ProfilePictureURL = &profilePicURL
+		}
+		_ = s.memberRepo.UpdateMember(ctx, member)
+	}
+
 	return nil
 }
 

@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '@clerk/clerk-react'
 import { useSelector } from 'react-redux'
@@ -54,6 +55,7 @@ const Sidebar = ({ role }: SidebarProps) => {
   const { signOut } = useAuth()
   const user = useSelector((s: RootState) => s.auth.user)
   const items = navItems[role]
+  const [mobileOpen, setMobileOpen] = useState(false)
 
   const handleSignOut = async () => {
     await signOut()
@@ -61,70 +63,112 @@ const Sidebar = ({ role }: SidebarProps) => {
   }
 
   return (
-    <aside className="fixed left-0 top-0 w-64 min-h-screen flex flex-col bg-white border-r border-gray-100 shadow-sm z-30">
-      {/* Logo */}
-      <div className="flex flex-col items-center px-6 py-6 border-b border-gray-50">
-        <KinfolkWordmark
-          uppercase
-          className="font-merriweather font-bold text-xl tracking-[0.12em] text-gray-900"
-        />
-        <span className="text-[8px] font-merriweather tracking-[0.3em] text-secondary uppercase mt-0.5">
-          Preserve Your Roots
-        </span>
-      </div>
+    <>
+      {/* ── Mobile hamburger button ── */}
+      <button
+        onClick={() => setMobileOpen(true)}
+        aria-label="Open navigation"
+        className="md:hidden fixed top-4 left-4 z-40 w-9 h-9 flex items-center justify-center rounded-xl bg-white border border-gray-200 shadow-sm text-gray-600 hover:text-gray-900 hover:border-gray-300 transition-all"
+      >
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
+          <line x1="3" y1="6" x2="21" y2="6" /><line x1="3" y1="12" x2="21" y2="12" /><line x1="3" y1="18" x2="21" y2="18" />
+        </svg>
+      </button>
 
-      {/* Nav */}
-      <nav className="flex flex-col gap-0.5 p-3 flex-1">
-        {items.map((item) => {
-          const isActive = location.pathname === item.to
-          return (
-            <Link
-              key={item.to}
-              to={item.to}
-              className={`
-                flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-merriweather font-medium
-                transition-all duration-150
-                ${isActive
-                  ? 'bg-primary/10 text-primary border border-primary/15'
-                  : 'text-gray-500 hover:bg-gray-50 hover:text-gray-800 border border-transparent'
-                }
-              `.trim()}
-            >
-              <span className={isActive ? 'text-primary' : 'text-gray-400'}>{item.icon}</span>
-              {item.label}
-              {isActive && <span className="ml-auto w-1.5 h-1.5 rounded-full bg-primary flex-shrink-0" />}
-            </Link>
-          )
-        })}
-      </nav>
+      {/* ── Mobile backdrop overlay ── */}
+      {mobileOpen && (
+        <div
+          className="md:hidden fixed inset-0 bg-black/40 z-40 backdrop-blur-sm"
+          onClick={() => setMobileOpen(false)}
+          aria-hidden="true"
+        />
+      )}
+
+      {/* ── Sidebar panel ── */}
+      <aside
+        className={`
+          fixed left-0 top-0 w-64 min-h-screen flex flex-col bg-white border-r border-gray-100 shadow-sm z-50
+          transition-transform duration-300 ease-in-out
+          ${mobileOpen ? 'translate-x-0' : '-translate-x-full'}
+          md:translate-x-0
+        `}
+      >
+        {/* Close button (mobile only) */}
+        <button
+          onClick={() => setMobileOpen(false)}
+          aria-label="Close navigation"
+          className="md:hidden absolute top-3 right-3 w-7 h-7 flex items-center justify-center rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors"
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
+            <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+          </svg>
+        </button>
+
+        {/* Logo */}
+        <div className="flex flex-col items-center px-6 py-6 border-b border-gray-50">
+          <KinfolkWordmark
+            uppercase
+            className="font-merriweather font-bold text-xl tracking-[0.12em] text-gray-900"
+          />
+          <span className="text-[8px] font-merriweather tracking-[0.3em] text-secondary uppercase mt-0.5">
+            Preserve Your Roots
+          </span>
+        </div>
+
+        {/* Nav */}
+        <nav className="flex flex-col gap-0.5 p-3 flex-1">
+          {items.map((item) => {
+            const isActive = location.pathname === item.to
+            return (
+              <Link
+                key={item.to}
+                to={item.to}
+                onClick={() => setMobileOpen(false)}
+                className={`
+                  flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-merriweather font-medium
+                  transition-all duration-150
+                  ${isActive
+                    ? 'bg-primary/10 text-primary border border-primary/15'
+                    : 'text-gray-500 hover:bg-gray-50 hover:text-gray-800 border border-transparent'
+                  }
+                `.trim()}
+              >
+                <span className={isActive ? 'text-primary' : 'text-gray-400'}>{item.icon}</span>
+                {item.label}
+                {isActive && <span className="ml-auto w-1.5 h-1.5 rounded-full bg-primary flex-shrink-0" />}
+              </Link>
+            )
+          })}
+        </nav>
 
       {/* User profile + sign out */}
-      <div className="border-t border-gray-100 p-4">
-        <div className="flex items-center gap-3 mb-3 min-w-0">
-          <Avatar
-            src={user?.profile_picture_url}
-            name={user?.full_name ?? 'User'}
-            size="sm"
-          />
-          <div className="flex flex-col min-w-0">
-            <p className="text-sm font-merriweather font-medium text-gray-900 truncate">{user?.full_name ?? 'User'}</p>
-            <p className="text-[11px] text-gray-400 truncate">{user?.email ?? ''}</p>
+        <div className="border-t border-gray-100 p-4">
+          <div className="flex items-center gap-3 mb-3 min-w-0">
+            <Avatar
+              src={user?.profile_picture_url}
+              name={user?.full_name ?? 'User'}
+              size="sm"
+            />
+            <div className="flex flex-col min-w-0">
+              <p className="text-sm font-merriweather font-medium text-gray-900 truncate">{user?.full_name ?? 'User'}</p>
+              <p className="text-[11px] text-gray-400 truncate">{user?.email ?? ''}</p>
+            </div>
           </div>
+          <button
+            onClick={handleSignOut}
+            className="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-merriweather font-medium text-gray-500 hover:bg-red-50 hover:text-red-600 transition-all duration-150 border border-transparent hover:border-red-100"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 flex-shrink-0">
+              <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/>
+            </svg>
+            Sign Out
+          </button>
         </div>
-        <button
-          onClick={handleSignOut}
-          className="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-merriweather font-medium text-gray-500 hover:bg-red-50 hover:text-red-600 transition-all duration-150 border border-transparent hover:border-red-100"
-        >
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 flex-shrink-0">
-            <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/>
-          </svg>
-          Sign Out
-        </button>
-      </div>
 
-      {/* Bottom gold rule */}
-      <div className="h-[2px] bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
-    </aside>
+        {/* Bottom gold rule */}
+        <div className="h-[2px] bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
+      </aside>
+    </>
   )
 }
 

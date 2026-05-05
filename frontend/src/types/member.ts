@@ -4,6 +4,7 @@ export interface Member {
   family_id?: string
   full_name: string
   email?: string
+  phone?: string
   profile_picture_url?: string
   user_id?: string
   invited_by: string

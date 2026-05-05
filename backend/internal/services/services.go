@@ -48,9 +48,10 @@ func NewServices(
 		Email:     email,
 		Inference: inference,
 		User: &UserService{
-			repo:     userRepo,
-			clanRepo: clanRepo,
-			audit:    audit,
+			repo:       userRepo,
+			clanRepo:   clanRepo,
+			memberRepo: memberRepo,
+			audit:      audit,
 		},
 		Clan: &ClanService{
 			repo:       clanRepo,

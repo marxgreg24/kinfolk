@@ -79,8 +79,15 @@ func (r *MemberRepository) ListMembersByClan(ctx context.Context, clanID string)
 	var members []*models.Member
 	// Deduplicate by email within the clan: keep the canonical record
 	// (prefer the one with a linked user account, newest as tiebreaker).
+	// Exclude members whose linked user has been soft-deleted.
+	// Also join users to surface the linked user's phone number.
 	if err := r.db.SelectContext(ctx, &members, `
-		SELECT * FROM (
+		SELECT
+			deduped.id, deduped.clan_id, deduped.family_id, deduped.full_name,
+			deduped.email, deduped.profile_picture_url, deduped.user_id,
+			deduped.invited_by, deduped.created_at, deduped.updated_at,
+			u.phone
+		FROM (
 			SELECT DISTINCT ON (LOWER(COALESCE(email, id::text))) *
 			FROM   members
 			WHERE  clan_id = $1
@@ -88,7 +95,9 @@ func (r *MemberRepository) ListMembersByClan(ctx context.Context, clanID string)
 			          (user_id IS NOT NULL) DESC,
 			          created_at DESC
 		) deduped
-		ORDER BY full_name`, clanID,
+		LEFT JOIN users u ON u.id = deduped.user_id AND u.deleted_at IS NULL
+		WHERE (deduped.user_id IS NULL OR u.id IS NOT NULL)
+		ORDER BY deduped.full_name`, clanID,
 	); err != nil {
 		return nil, fmt.Errorf("repository.ListMembersByClan: %w", err)
 	}

@@ -17,6 +17,12 @@ const EmailIcon = () => (
   </svg>
 )
 
+const PhoneIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" className="w-3.5 h-3.5 flex-shrink-0">
+    <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.8 19.79 19.79 0 01.01 1.18 2 2 0 012 .01h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.91 7.91a16 16 0 006.18 6.18l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 14.92v2z"/>
+  </svg>
+)
+
 const UserCheckIcon = () => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" className="w-3.5 h-3.5">
     <path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2" />
@@ -103,17 +109,29 @@ const ClanMemberList = ({ members, isLoading = false, showContact = false }: Cla
                 </div>
 
                 {/* Contact row */}
-                {(showContact || member.email) && member.email ? (
-                  <a
-                    href={`mailto:${member.email}`}
-                    className="inline-flex items-center gap-1.5 text-xs font-merriweather text-gray-400 hover:text-primary transition-colors mt-0.5 truncate max-w-full"
-                  >
-                    <EmailIcon />
-                    {member.email}
-                  </a>
-                ) : (
-                  <p className="text-xs font-merriweather text-gray-300 mt-0.5 italic">No contact info</p>
-                )}
+                <div className="flex flex-col gap-0.5 mt-0.5">
+                  {(showContact || member.email) && member.email ? (
+                    <a
+                      href={`mailto:${member.email}`}
+                      className="inline-flex items-center gap-1.5 text-xs font-merriweather text-gray-400 hover:text-primary transition-colors truncate max-w-full"
+                    >
+                      <EmailIcon />
+                      {member.email}
+                    </a>
+                  ) : null}
+                  {member.phone ? (
+                    <a
+                      href={`tel:${member.phone}`}
+                      className="inline-flex items-center gap-1.5 text-xs font-merriweather text-gray-400 hover:text-primary transition-colors"
+                    >
+                      <PhoneIcon />
+                      {member.phone}
+                    </a>
+                  ) : null}
+                  {!member.email && !member.phone && (
+                    <p className="text-xs font-merriweather text-gray-300 italic">No contact info</p>
+                  )}
+                </div>
               </div>
 
               {/* Joined date */}

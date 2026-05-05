@@ -19,4 +19,5 @@ type User struct {
 	PasswordResetRequired bool       `db:"password_reset_required" json:"password_reset_required"`
 	CreatedAt             time.Time  `db:"created_at" json:"created_at"`
 	UpdatedAt             time.Time  `db:"updated_at" json:"updated_at"`
+	DeletedAt             *time.Time `db:"deleted_at" json:"deleted_at,omitempty"`
 }

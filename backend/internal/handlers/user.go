@@ -139,7 +139,7 @@ func (h *UserHandler) UpdateMe(c *gin.Context) {
 	c.Status(http.StatusNoContent)
 }
 
-// DeleteMe permanently deletes the authenticated user's account.
+// DeleteMe soft-deletes the authenticated user's account and revokes their Clerk session.
 //
 // DELETE /api/v1/users/me
 func (h *UserHandler) DeleteMe(c *gin.Context) {
@@ -152,6 +152,12 @@ func (h *UserHandler) DeleteMe(c *gin.Context) {
 	if err := h.userSvc.DeleteProfile(c.Request.Context(), clerkID); err != nil {
 		errorResponse(c, http.StatusInternalServerError, err.Error())
 		return
+	}
+
+	// Best-effort: revoke the Clerk account so the user cannot re-authenticate.
+	clerk.SetKey(h.cfg.ClerkSecretKey)
+	if _, err := clerkuser.Delete(c.Request.Context(), clerkID); err != nil {
+		log.Printf("user.DeleteMe: Clerk delete failed for %s: %v", clerkID, err)
 	}
 
 	c.Status(http.StatusNoContent)

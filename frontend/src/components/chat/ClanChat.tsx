@@ -512,7 +512,7 @@ const ClanChat = () => {
       </div>
 
       {/* ── Main column ── */}
-      <div className="flex-1 flex flex-col lg:ml-64 h-screen overflow-hidden">
+      <div className="flex-1 flex flex-col md:ml-64 h-screen overflow-hidden">
 
         {/* ════ Mobile top bar ════ */}
         <div className="flex items-center justify-between px-4 py-3 bg-white border-b border-gray-100 shadow-sm lg:hidden flex-shrink-0">

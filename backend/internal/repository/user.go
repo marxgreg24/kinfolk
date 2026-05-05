@@ -38,7 +38,7 @@ func (r *UserRepository) CreateUser(ctx context.Context, user *models.User) erro
 
 func (r *UserRepository) GetUserByClerkID(ctx context.Context, clerkID string) (*models.User, error) {
 	var u models.User
-	err := r.db.GetContext(ctx, &u, `SELECT * FROM users WHERE clerk_user_id = $1`, clerkID)
+	err := r.db.GetContext(ctx, &u, `SELECT * FROM users WHERE clerk_user_id = $1 AND deleted_at IS NULL`, clerkID)
 	if err == sql.ErrNoRows {
 		return nil, nil
 	}
@@ -50,7 +50,7 @@ func (r *UserRepository) GetUserByClerkID(ctx context.Context, clerkID string) (
 
 func (r *UserRepository) GetUserByEmail(ctx context.Context, email string) (*models.User, error) {
 	var u models.User
-	err := r.db.GetContext(ctx, &u, `SELECT * FROM users WHERE email = $1`, email)
+	err := r.db.GetContext(ctx, &u, `SELECT * FROM users WHERE email = $1 AND deleted_at IS NULL`, email)
 	if err == sql.ErrNoRows {
 		return nil, nil
 	}
@@ -73,7 +73,7 @@ func (r *UserRepository) UpdateClerkID(ctx context.Context, userID, clerkUserID 
 
 func (r *UserRepository) GetUserByID(ctx context.Context, id string) (*models.User, error) {
 	var u models.User
-	err := r.db.GetContext(ctx, &u, `SELECT * FROM users WHERE id = $1`, id)
+	err := r.db.GetContext(ctx, &u, `SELECT * FROM users WHERE id = $1 AND deleted_at IS NULL`, id)
 	if err == sql.ErrNoRows {
 		return nil, nil
 	}
@@ -105,7 +105,7 @@ func (r *UserRepository) UpdateUser(ctx context.Context, user *models.User) erro
 }
 
 func (r *UserRepository) ListUsers(ctx context.Context, role string, isSuspended *bool) ([]*models.User, error) {
-	query := `SELECT * FROM users WHERE role != 'admin'`
+	query := `SELECT * FROM users WHERE role != 'admin' AND deleted_at IS NULL`
 	args := []interface{}{}
 	idx := 1
 
@@ -131,7 +131,7 @@ func (r *UserRepository) ListUsers(ctx context.Context, role string, isSuspended
 func (r *UserRepository) ListUsersByClan(ctx context.Context, clanID string) ([]*models.User, error) {
 	var users []*models.User
 	if err := r.db.SelectContext(ctx, &users,
-		`SELECT * FROM users WHERE clan_id = $1 ORDER BY full_name`, clanID,
+		`SELECT * FROM users WHERE clan_id = $1 AND deleted_at IS NULL ORDER BY full_name`, clanID,
 	); err != nil {
 		return nil, fmt.Errorf("repository.ListUsersByClan: %w", err)
 	}
@@ -150,11 +150,28 @@ func (r *UserRepository) SuspendUser(ctx context.Context, id string, suspend boo
 }
 
 func (r *UserRepository) DeleteUser(ctx context.Context, id string) error {
-	_, err := r.db.ExecContext(ctx, `DELETE FROM users WHERE id = $1`, id)
+	_, err := r.db.ExecContext(ctx,
+		`UPDATE users SET deleted_at = NOW(), updated_at = NOW() WHERE id = $1 AND deleted_at IS NULL`,
+		id,
+	)
 	if err != nil {
 		return fmt.Errorf("repository.DeleteUser: %w", err)
 	}
 	return nil
+}
+
+// GetUserByClerkIDIncludeDeleted returns a user even if soft-deleted. Used to
+// detect deleted accounts attempting to re-sync via Clerk.
+func (r *UserRepository) GetUserByClerkIDIncludeDeleted(ctx context.Context, clerkID string) (*models.User, error) {
+	var u models.User
+	err := r.db.GetContext(ctx, &u, `SELECT * FROM users WHERE clerk_user_id = $1`, clerkID)
+	if err == sql.ErrNoRows {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, fmt.Errorf("repository.GetUserByClerkIDIncludeDeleted: %w", err)
+	}
+	return &u, nil
 }
 
 func (r *UserRepository) SetPasswordResetRequired(ctx context.Context, id string, required bool) error {

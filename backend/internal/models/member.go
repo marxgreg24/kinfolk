@@ -10,6 +10,7 @@ type Member struct {
 	FamilyID          *string   `db:"family_id" json:"family_id,omitempty"`
 	FullName          string    `db:"full_name" json:"full_name"`
 	Email             *string   `db:"email" json:"email,omitempty"`
+	Phone             *string   `db:"phone" json:"phone,omitempty"`
 	ProfilePictureURL *string   `db:"profile_picture_url" json:"profile_picture_url,omitempty"`
 	UserID            *string   `db:"user_id" json:"user_id,omitempty"`
 	InvitedBy         string    `db:"invited_by" json:"invited_by"`

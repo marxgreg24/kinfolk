@@ -2,6 +2,7 @@
 package handlers
 
 import (
+	"log"
 	"net/http"
 	"strings"
 	"time"
@@ -166,13 +167,35 @@ func (h *AdminHandler) SuspendUser(c *gin.Context) {
 	c.Status(http.StatusNoContent)
 }
 
-// DeleteUser permanently removes a user account.
+// DeleteUser soft-deletes a user account and revokes their Clerk session.
 //
 // DELETE /admin/users/:id
 func (h *AdminHandler) DeleteUser(c *gin.Context) {
-	if err := h.userRepo.DeleteUser(c.Request.Context(), c.Param("id")); err != nil {
+	ctx := c.Request.Context()
+	userID := c.Param("id")
+
+	// Look up the user so we can also remove the Clerk account (prevents re-login).
+	target, err := h.userRepo.GetUserByID(ctx, userID)
+	if err != nil {
 		errorResponse(c, http.StatusInternalServerError, err.Error())
 		return
+	}
+	if target == nil {
+		errorResponse(c, http.StatusNotFound, "user not found")
+		return
+	}
+
+	// Soft-delete in our database first.
+	if err := h.userRepo.DeleteUser(ctx, userID); err != nil {
+		errorResponse(c, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	// Best-effort: revoke the Clerk account so the user cannot re-authenticate.
+	clerk.SetKey(h.cfg.ClerkSecretKey)
+	if _, err := clerkuser.Delete(ctx, target.ClerkUserID); err != nil {
+		// Non-fatal — the account is already hidden from the application.
+		log.Printf("admin.DeleteUser: Clerk delete failed for %s: %v", target.ClerkUserID, err)
 	}
 
 	c.Status(http.StatusNoContent)

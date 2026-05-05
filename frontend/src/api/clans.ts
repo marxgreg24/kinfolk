@@ -1,13 +1,11 @@
-import axios from 'axios'
 import apiClient from './axios'
 import type { Clan } from '@/types/clan'
 import type { Member } from '@/types/member'
 import type { Relationship } from '@/types/relationship'
 
-// Public — no auth token needed.
-const baseURL = import.meta.env.VITE_API_URL ?? ''
+// Public — no auth token needed, but still uses the configured base URL.
 export const listPublicClans = async (): Promise<Clan[]> => {
-  const res = await axios.get(`${baseURL}/api/v1/clans`)
+  const res = await apiClient.get('/api/v1/clans')
   return (res.data as { data: Clan[] }).data ?? []
 }
 

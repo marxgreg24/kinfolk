@@ -504,7 +504,7 @@ const FamilyTree = () => {
   return (
     <div className="flex min-h-screen" style={{ background: '#fafaf8' }}>
       <Sidebar role={user.role} />
-      <div className="flex-1 flex flex-col ml-64">
+      <div className="flex-1 flex flex-col md:ml-64">
         <div
           ref={containerRef}
           className="relative w-full overflow-hidden"
