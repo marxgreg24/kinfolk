@@ -1,14 +1,14 @@
 # =============================================================================
 # Stage 1: migrate
 # =============================================================================
-FROM golang:1.24-alpine AS migrate
+FROM golang:1.25-alpine AS migrate
 RUN apk add --no-cache netcat-openbsd \
     && go install github.com/pressly/goose/v3/cmd/goose@v3.24.2
 
 # =============================================================================
 # Stage 2: dev
 # =============================================================================
-FROM golang:1.24-alpine AS dev
+FROM golang:1.25-alpine AS dev
 RUN go install github.com/air-verse/air@v1.61.7
 WORKDIR /app
 COPY go.mod go.sum ./
@@ -20,7 +20,7 @@ CMD ["air", "-c", ".air.toml"]
 # =============================================================================
 # Stage 3: builder
 # =============================================================================
-FROM golang:1.24-alpine AS builder
+FROM golang:1.25-alpine AS builder
 WORKDIR /app
 COPY go.mod go.sum ./
 RUN go mod download
