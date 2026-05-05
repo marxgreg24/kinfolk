@@ -257,7 +257,7 @@ const DashboardPage = () => {
 
           {/* ── SETTINGS TAB ── */}
           {activeTab === 'settings' && (
-            <div className="max-w-xl flex flex-col gap-6">
+            <div className="flex flex-col gap-6">
 
               {/* Edit Profile card */}
               <div className="bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm">
