@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useSelector } from 'react-redux'
+import { useNavigate } from 'react-router-dom'
 import type { RootState } from '@/store'
 import { useListInterestForms, useUpdateInterestFormStatus } from '@/hooks/useAdmin'
 import Sidebar from '@/components/layout/Sidebar'
@@ -12,6 +13,7 @@ const TABS: Tab[] = ['all', 'pending', 'approved', 'rejected']
 
 const AdminInterestForms = () => {
   const user = useSelector((s: RootState) => s.auth.user)
+  const navigate = useNavigate()
   const [activeTab, setActiveTab] = useState<Tab>('pending')
   const { data: forms, isLoading } = useListInterestForms(activeTab === 'all' ? undefined : activeTab)
   const updateStatus = useUpdateInterestFormStatus()
@@ -94,7 +96,23 @@ const AdminInterestForms = () => {
                       {form.status === 'pending' && (
                         <div className="flex gap-2">
                           <Button variant="primary" size="sm" isLoading={updateStatus.isPending}
-                            onClick={() => updateStatus.mutate({ id: form.id, status: 'approved' })}
+                            onClick={() =>
+                              updateStatus.mutate(
+                                { id: form.id, status: 'approved' },
+                                {
+                                  onSuccess: () =>
+                                    navigate('/admin/clan-leaders', {
+                                      state: {
+                                        prefill: {
+                                          full_name: form.full_name,
+                                          email: form.email,
+                                          phone: form.phone ?? '',
+                                        },
+                                      },
+                                    }),
+                                },
+                              )
+                            }
                             className="rounded-full px-4">
                             Approve
                           </Button>

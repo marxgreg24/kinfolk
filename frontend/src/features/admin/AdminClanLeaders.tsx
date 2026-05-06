@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useSelector } from 'react-redux'
+import { useLocation } from 'react-router-dom'
 import type { RootState } from '@/store'
 import { useListUsers, useCreateClanLeader, useListAdminClans } from '@/hooks/useAdmin'
 import Sidebar from '@/components/layout/Sidebar'
@@ -13,11 +14,13 @@ const EMPTY_FORM = { full_name: '', email: '', phone: '' }
 
 const AdminClanLeaders = () => {
   const user = useSelector((s: RootState) => s.auth.user)
+  const location = useLocation()
+  const prefill = (location.state as { prefill?: { full_name: string; email: string; phone: string } } | null)?.prefill
   const createMutation = useCreateClanLeader()
   const { data: clanLeaders, isLoading } = useListUsers({ role: 'clan_leader' })
   const { data: clans } = useListAdminClans()
   const clanNameById = Object.fromEntries((clans ?? []).map((c) => [c.id, c.name]))
-  const [form, setForm] = useState(EMPTY_FORM)
+  const [form, setForm] = useState(prefill ?? EMPTY_FORM)
 
   if (!user) return <></>
 
@@ -50,6 +53,12 @@ const AdminClanLeaders = () => {
             <div className="h-[2px] bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
             <div className="p-6">
               <h2 className="font-merriweather font-bold text-base text-gray-900 mb-5">Add New Clan Leader</h2>
+              {prefill && (
+                <div className="flex items-center gap-2 mb-4 px-3 py-2 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-700 font-merriweather">
+                  <svg viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4 shrink-0"><path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a.75.75 0 000 1.5h.253a.25.25 0 01.244.304l-.459 2.066A1.75 1.75 0 0010.747 15H11a.75.75 0 000-1.5h-.253a.25.25 0 01-.244-.304l.459-2.066A1.75 1.75 0 009.253 9H9z" clipRule="evenodd" /></svg>
+                  Pre-filled from approved interest form. Review and create the account.
+                </div>
+              )}
               <form onSubmit={handleSubmit} className="grid grid-cols-1 sm:grid-cols-3 gap-4 items-end">
                 <Input label="Full Name" required value={form.full_name} onChange={handleChange('full_name')} placeholder="e.g. Namukasa Joyce" />
                 <Input label="Email" type="email" required value={form.email} onChange={handleChange('email')} placeholder="joyce@gmail.com" />
