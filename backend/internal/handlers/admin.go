@@ -21,6 +21,7 @@ import (
 type AdminHandler struct {
 	userRepo         *repository.UserRepository
 	interestFormRepo *repository.InterestFormRepository
+	memberRepo       *repository.MemberRepository
 	userSvc          *services.UserService
 	emailSvc         *services.EmailService
 	auditSvc         *services.AuditService
@@ -30,6 +31,7 @@ type AdminHandler struct {
 func NewAdminHandler(
 	userRepo *repository.UserRepository,
 	interestFormRepo *repository.InterestFormRepository,
+	memberRepo *repository.MemberRepository,
 	userSvc *services.UserService,
 	emailSvc *services.EmailService,
 	auditSvc *services.AuditService,
@@ -38,6 +40,7 @@ func NewAdminHandler(
 	return &AdminHandler{
 		userRepo:         userRepo,
 		interestFormRepo: interestFormRepo,
+		memberRepo:       memberRepo,
 		userSvc:          userSvc,
 		emailSvc:         emailSvc,
 		auditSvc:         auditSvc,
@@ -187,6 +190,13 @@ func (h *AdminHandler) DeleteUser(c *gin.Context) {
 
 	// Soft-delete in our database first.
 	if err := h.userRepo.DeleteUser(ctx, userID); err != nil {
+		errorResponse(c, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	// Remove all member records linked to this user so they no longer appear
+	// on any clan member list or family tree.
+	if err := h.memberRepo.DeleteMembersByUserID(ctx, userID); err != nil {
 		errorResponse(c, http.StatusInternalServerError, err.Error())
 		return
 	}

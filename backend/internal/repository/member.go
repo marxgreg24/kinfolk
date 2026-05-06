@@ -43,8 +43,13 @@ func (r *MemberRepository) CreateMember(ctx context.Context, member *models.Memb
 
 func (r *MemberRepository) ListMembersByFamily(ctx context.Context, familyID string) ([]*models.Member, error) {
 	var members []*models.Member
-	if err := r.db.SelectContext(ctx, &members,
-		`SELECT * FROM members WHERE family_id = $1 ORDER BY full_name`, familyID,
+	if err := r.db.SelectContext(ctx, &members, `
+		SELECT m.*
+		FROM   members m
+		LEFT   JOIN users u ON u.id = m.user_id AND u.deleted_at IS NULL
+		WHERE  m.family_id = $1
+		AND    (m.user_id IS NULL OR u.id IS NOT NULL)
+		ORDER  BY m.full_name`, familyID,
 	); err != nil {
 		return nil, fmt.Errorf("repository.ListMembersByFamily: %w", err)
 	}
@@ -154,6 +159,19 @@ func (r *MemberRepository) LinkMemberToUser(ctx context.Context, memberID, userI
 	)
 	if err != nil {
 		return fmt.Errorf("repository.LinkMemberToUser: %w", err)
+	}
+	return nil
+}
+
+// DeleteMembersByUserID hard-deletes all member rows linked to a given user ID.
+// Called when an admin deletes a user so the person is fully removed from all
+// clan and family trees.
+func (r *MemberRepository) DeleteMembersByUserID(ctx context.Context, userID string) error {
+	_, err := r.db.ExecContext(ctx,
+		`DELETE FROM members WHERE user_id = $1`, userID,
+	)
+	if err != nil {
+		return fmt.Errorf("repository.DeleteMembersByUserID: %w", err)
 	}
 	return nil
 }

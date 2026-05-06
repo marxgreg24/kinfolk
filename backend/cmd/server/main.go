@@ -81,7 +81,7 @@ func main() {
 		ClanMemberInterest: handlers.NewClanMemberInterestHandler(clanMemberInterestRepo, clanRepo, userRepo, svcs.Email),
 		Relationship:       handlers.NewRelationshipHandler(svcs.Relationship, memberRepo),
 		Conflict:           handlers.NewConflictHandler(svcs.Conflict, svcs.User),
-		Admin:              handlers.NewAdminHandler(userRepo, interestFormRepo, svcs.User, svcs.Email, svcs.Audit, cfg),
+		Admin:              handlers.NewAdminHandler(userRepo, interestFormRepo, memberRepo, svcs.User, svcs.Email, svcs.Audit, cfg),
 		InterestForm:       handlers.NewInterestFormHandler(interestFormRepo),
 		Chat:               handlers.NewChatHandler(cfg, svcs.User, userRepo),
 		Export:             handlers.NewExportHandler(svcs.Gedcom),
