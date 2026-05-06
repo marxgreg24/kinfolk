@@ -1,7 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import notify from '@/utils/toast'
 import { listConflicts, resolveConflict } from '@/api/conflicts'
-import { listMatchSuggestions, approveMatchSuggestion, rejectMatchSuggestion } from '@/api/matchSuggestions'
 import { addMember } from '@/api/members'
 import { createClan } from '@/api/clans'
 import type { Conflict } from '@/types/conflict'
@@ -68,45 +67,6 @@ export const useResolveConflict = (clanId: string) => {
     },
     onError: (error: any) => {
       const message = error?.response?.data?.error ?? 'Failed to resolve conflict. Please try again.'
-      notify.error(message)
-    },
-  })
-}
-
-export const useListMatchSuggestions = (clanId: string) =>
-  useQuery({
-    queryKey: ['match-suggestions', clanId],
-    queryFn: () => listMatchSuggestions(clanId),
-    enabled: !!clanId,
-    select: (data) => data ?? [],
-  })
-
-export const useApproveMatchSuggestion = (clanId: string) => {
-  const queryClient = useQueryClient()
-  return useMutation({
-    mutationFn: approveMatchSuggestion,
-    onSuccess: () => {
-      notify.success('Member match approved and linked successfully.')
-      void queryClient.invalidateQueries({ queryKey: ['match-suggestions', clanId] })
-      void queryClient.invalidateQueries({ queryKey: ['clan-members', clanId] })
-    },
-    onError: (error: any) => {
-      const message = error?.response?.data?.error ?? 'Failed to approve suggestion. Please try again.'
-      notify.error(message)
-    },
-  })
-}
-
-export const useRejectMatchSuggestion = (clanId: string) => {
-  const queryClient = useQueryClient()
-  return useMutation({
-    mutationFn: rejectMatchSuggestion,
-    onSuccess: () => {
-      notify.neutral('Match suggestion dismissed.')
-      void queryClient.invalidateQueries({ queryKey: ['match-suggestions', clanId] })
-    },
-    onError: (error: any) => {
-      const message = error?.response?.data?.error ?? 'Failed to reject suggestion. Please try again.'
       notify.error(message)
     },
   })

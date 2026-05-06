@@ -16,7 +16,6 @@ type Services struct {
 	Relationship *RelationshipService
 	Conflict     *ConflictService
 	Inference    *InferenceService
-	MemberLink   *MemberLinkService
 	Gedcom       *GedcomService
 	Email        *EmailService
 	Audit        *AuditService
@@ -33,7 +32,6 @@ func NewServices(
 	conflictRepo *repository.ConflictRepository,
 	interestFormRepo *repository.InterestFormRepository,
 	auditRepo *repository.AuditLogRepository,
-	matchRepo *repository.MatchSuggestionRepository,
 ) *Services {
 	audit := &AuditService{repo: auditRepo}
 	email := newEmailService(cfg)
@@ -77,12 +75,6 @@ func NewServices(
 			repo:             conflictRepo,
 			relationshipRepo: relationshipRepo,
 			audit:            audit,
-		},
-		MemberLink: &MemberLinkService{
-			memberRepo: memberRepo,
-			clanRepo:   clanRepo,
-			matchRepo:  matchRepo,
-			audit:      audit,
 		},
 		Gedcom: &GedcomService{
 			memberRepo:       memberRepo,

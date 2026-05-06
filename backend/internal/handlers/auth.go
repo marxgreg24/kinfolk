@@ -13,20 +13,17 @@ import (
 
 // AuthHandler handles authentication-related HTTP requests.
 type AuthHandler struct {
-	userSvc    *services.UserService
-	memberLink *services.MemberLinkService
-	userRepo   *repository.UserRepository
+	userSvc  *services.UserService
+	userRepo *repository.UserRepository
 }
 
 func NewAuthHandler(
 	userSvc *services.UserService,
-	memberLink *services.MemberLinkService,
 	userRepo *repository.UserRepository,
 ) *AuthHandler {
 	return &AuthHandler{
-		userSvc:    userSvc,
-		memberLink: memberLink,
-		userRepo:   userRepo,
+		userSvc:  userSvc,
+		userRepo: userRepo,
 	}
 }
 
@@ -55,11 +52,6 @@ func (h *AuthHandler) Sync(c *gin.Context) {
 	if err != nil {
 		errorResponse(c, http.StatusInternalServerError, err.Error())
 		return
-	}
-
-	// Best-effort: try to link the user to an existing member slot (only when clan is set).
-	if user.ClanID != nil {
-		_ = h.memberLink.LinkMemberOnJoin(c.Request.Context(), user, *user.ClanID)
 	}
 
 	successResponse(c, user)

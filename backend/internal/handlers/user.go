@@ -18,13 +18,12 @@ import (
 
 // UserHandler handles user profile HTTP requests.
 type UserHandler struct {
-	userSvc    *services.UserService
-	memberLink *services.MemberLinkService
-	cfg        *config.Config
+	userSvc *services.UserService
+	cfg     *config.Config
 }
 
-func NewUserHandler(userSvc *services.UserService, memberLink *services.MemberLinkService, cfg *config.Config) *UserHandler {
-	return &UserHandler{userSvc: userSvc, memberLink: memberLink, cfg: cfg}
+func NewUserHandler(userSvc *services.UserService, cfg *config.Config) *UserHandler {
+	return &UserHandler{userSvc: userSvc, cfg: cfg}
 }
 
 // GetMe returns the authenticated user's profile.
@@ -50,15 +49,6 @@ func (h *UserHandler) GetMe(c *gin.Context) {
 		errorResponse(c, http.StatusNotFound, "user not found")
 		return
 	}
-	if user.ClanID != nil {
-		// Best-effort: link the user to their member slot. Failure is non-fatal
-		// (same policy as auth/sync) — a linking error must not block the user
-		// from loading their profile or accessing the chat.
-		if err := h.memberLink.LinkMemberOnJoin(c.Request.Context(), user, *user.ClanID); err != nil {
-			log.Printf("LinkMemberOnJoin user=%s clan=%s: %v", user.ID, *user.ClanID, err)
-		}
-	}
-
 	successResponse(c, user)
 }
 

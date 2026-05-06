@@ -6,7 +6,6 @@ import { useGetClan, useGetClanMembers } from '@/hooks/useClan'
 import { useListConflicts } from '@/hooks/useClanLeader'
 import Sidebar from '@/components/layout/Sidebar'
 import Spinner from '@/components/ui/Spinner'
-import MatchSuggestionsPanel from './MatchSuggestionsPanel'
 import ClanMemberList from '@/components/clan/ClanMemberList'
 
 const AddMemberIcon = () => (
@@ -116,8 +115,6 @@ const ClanLeaderDashboard = () => {
               </button>
             ))}
           </div>
-
-          <MatchSuggestionsPanel clanId={user?.clan_id ?? ''} />
 
           {/* Clan Members List */}
           <div className="mt-8">

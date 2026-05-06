@@ -54,7 +54,6 @@ func main() {
 	conflictRepo := repository.NewConflictRepository(database)
 	interestFormRepo := repository.NewInterestFormRepository(database)
 	auditRepo := repository.NewAuditLogRepository(database)
-	matchRepo := repository.NewMatchSuggestionRepository(database)
 
 	// ── Services ─────────────────────────────────────────────────────────────
 	svcs := services.NewServices(
@@ -67,13 +66,12 @@ func main() {
 		conflictRepo,
 		interestFormRepo,
 		auditRepo,
-		matchRepo,
 	)
 
 	// ── Handlers ─────────────────────────────────────────────────────────────
 	h := &router.Handlers{
-		Auth:               handlers.NewAuthHandler(svcs.User, svcs.MemberLink, userRepo),
-		User:               handlers.NewUserHandler(svcs.User, svcs.MemberLink, cfg),
+		Auth:               handlers.NewAuthHandler(svcs.User, userRepo),
+		User:               handlers.NewUserHandler(svcs.User, cfg),
 		Upload:             handlers.NewUploadHandler(cfg),
 		Clan:               handlers.NewClanHandler(svcs.Clan),
 		Member:             handlers.NewMemberHandler(svcs.Member, svcs.Relationship, userRepo, clanRepo, svcs.Email, cfg),
@@ -85,7 +83,6 @@ func main() {
 		InterestForm:       handlers.NewInterestFormHandler(interestFormRepo),
 		Chat:               handlers.NewChatHandler(cfg, svcs.User, userRepo),
 		Export:             handlers.NewExportHandler(svcs.Gedcom),
-		MatchSuggestion:    handlers.NewMatchSuggestionHandler(matchRepo, svcs.MemberLink, svcs.Audit, userRepo),
 	}
 
 	r := router.SetupRouter(h, cfg, database)

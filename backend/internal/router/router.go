@@ -27,7 +27,6 @@ type Handlers struct {
 	ClanMemberInterest *handlers.ClanMemberInterestHandler
 	Chat               *handlers.ChatHandler
 	Export             *handlers.ExportHandler
-	MatchSuggestion    *handlers.MatchSuggestionHandler
 }
 
 // SetupRouter creates the Gin engine with global middleware and all route groups.
@@ -91,9 +90,6 @@ func SetupRouter(h *Handlers, cfg *config.Config, db *sqlx.DB) *gin.Engine {
 	leader.POST("/member-interests/:id/archive", h.ClanMemberInterest.Archive)
 	leader.GET("/conflicts", h.Conflict.ListConflicts)
 	leader.POST("/conflicts/:id/resolve", h.Conflict.ResolveConflict)
-	leader.GET("/match-suggestions", h.MatchSuggestion.ListSuggestions)
-	leader.POST("/match-suggestions/:id/approve", h.MatchSuggestion.ApproveSuggestion)
-	leader.POST("/match-suggestions/:id/reject", h.MatchSuggestion.RejectSuggestion)
 
 	// ── Admin routes ───────────────────────────────────────────────────────────
 	admin := api.Group("/admin")
